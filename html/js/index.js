@@ -12,14 +12,18 @@
     var grid = d3.layout.grid()
       .bands()
       .cols(6)
-      .size([width, height])
       .padding([0.1, 0.1])
+      .size([width, height])
 
     metros = grid(metros)
 
     var plotSize   = grid.nodeSize(),
         plotWidth  = plotSize[0],
         plotHeight = plotSize[1]
+
+    var plotMargin = { top: 20, right: 0, bottom: 0, left: 0 },
+        plotWidth = plotWidth - plotMargin.left - plotMargin.right
+        plotHeight = plotHeight - plotMargin.top - plotMargin.bottom
 
     // Establishes some extents so we can create global scales for relative
     // sizing
@@ -40,9 +44,21 @@
     // of poverty for each tract
     var y = d3.scale.linear()
       .domain([povertyRateMin, povertyRateMax])
-      .range([height, 0])
+      .range([plotHeight, 0])
 
-    console.log(populationMin, populationMax, povertyCountMin, povertyCountMax);
+    // Initialize an axis for x so we can display year numbers and ticks
+    var xax = d3.svg.axis()
+      .scale(x)
+      .tickSize(plotHeight)
+      .tickFormat(function(d, i) { return years[i] })
+
+    // Initialize a path generator so we can create a path for each tract
+    // in a metro area.
+    var path = d3.svg.line()
+      .interpolate('monotone')
+      .x(function(d, i) { return x(i) })
+      .y(y)
+
     // Create the main SVG container element with the proper size
     var vis = el.append('svg')
       .attr('width', width + margin.left + margin.right)
@@ -54,13 +70,56 @@
     var plot = vis.selectAll('.plot')
       .data(metros)
     .enter().append('g')
-      .attr('transform', function(d) { return "translate(" + d.x + "," + d.y + ")" })
+      .attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')' })
       .attr('class', 'plot')
+    .append('g')
+      .attr('transform', function(d) { return 'translate(' + plotMargin.left + ',' + plotMargin.top + ')' })
+
+    // plot.append('line')
+    //   .attr('class', 'divider')
+    //   .attr('x1', plotWidth)
+    //   .attr('x2', plotWidth)
+    //   .attr('y1', 0)
+    //   .attr('y2', plotHeight + plotMargin.top + plotMargin.bottom)
+    //
+    // plot.append('line')
+    //   .attr('class', 'divider')
+    //   .attr('x1', 0)
+    //   .attr('x2', plotWidth + plotMargin.left + plotMargin.right)
+    //   .attr('y1', plotHeight)
+    //   .attr('y2', plotHeight)
 
     // Add the metro title to each plot
     plot.append('text')
       .attr('class', 'title')
       .text(formatMetroName)
+
+    var rates = plot.append('g')
+      .attr('class', 'poverty-rate')
+
+    var tracts = rates.selectAll('.tract')
+      .data(function(d) { return d.values.tracts.sort(function(a, b) { return a.fallenStar - b.fallenStar }) })
+    .enter().append('g')
+      .attr('class', 'tract')
+
+    tracts.append('path')
+      .attr('class', 'rate-line')
+      .classed('newly-poor', function(d) { return d.newlyPoor })
+      .classed('fallen-star', function(d) { return d.fallenStar })
+      .attr('d', function(d) { return  path(d.povrate) })
+
+    plot.append('g')
+      .attr('class', 'axis x')
+      .call(xax)
+
+    // tracts.selectAll('.rate')
+    //   .data(function(d) { return d.povrate })
+    // .enter().append('circle')
+    //   .attr('class', 'rate')
+    //   .attr('cx', function(d, i) { return x(i) })
+    //   .attr('cy', y)
+    //   .attr('r', 1)
+
   }
 
   // Private - Simplify metro name to the first metro and state

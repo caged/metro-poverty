@@ -1,6 +1,6 @@
 body {
   margin: 0;
-  font: 12px "Open Sans", "Helvetica Neue", Helvetica, sans-serif;
+  font: 12px "Helvetica Neue", Helvetica, sans-serif;
 }
 
 .canvas {
@@ -8,6 +8,53 @@ body {
   height: 100vh;
 }
 
+.divider {
+  stroke: #eee;
+  stroke-width: 1;
+  shape-rendering: crispedges;
+}
+
 .title {
+  font-size: 10px;
   font-weight: bold;
 }
+
+.rate {
+  fill-opacity: 0.2;
+  fill: blue;
+}
+
+/*----------------------------------------------
+ * tract lines
+ *---------------------------------------------- */
+.rate-line {
+  fill: none;
+  stroke: #eee;
+  stroke-width: 0.5;
+  stroke-opacity: 0.5;
+}
+
+.fallen-star {
+  stroke: red;
+}
+
+/*----------------------------------------------
+ * axis ticks
+ *---------------------------------------------- */
+ .domain {
+   fill: none;
+ }
+
+ .axis text {
+   font-size: 9px;
+ }
+
+ .axis line {
+   stroke: #bbb;
+   stroke-width: 0.5;
+   shape-rendering: crispedges;
+ }
+
+ .x.axis line:first-child {
+   display: none;
+ }
