@@ -75,20 +75,6 @@
     .append('g')
       .attr('transform', function(d) { return 'translate(' + plotMargin.left + ',' + plotMargin.top + ')' })
 
-    // plot.append('line')
-    //   .attr('class', 'divider')
-    //   .attr('x1', plotWidth)
-    //   .attr('x2', plotWidth)
-    //   .attr('y1', 0)
-    //   .attr('y2', plotHeight + plotMargin.top + plotMargin.bottom)
-    //
-    // plot.append('line')
-    //   .attr('class', 'divider')
-    //   .attr('x1', 0)
-    //   .attr('x2', plotWidth + plotMargin.left + plotMargin.right)
-    //   .attr('y1', plotHeight)
-    //   .attr('y2', plotHeight)
-
     // Add the metro title to each plot
     plot.append('text')
       .attr('class', 'title')

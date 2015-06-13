@@ -8,12 +8,6 @@ body {
   height: 100vh;
 }
 
-.divider {
-  stroke: #eee;
-  stroke-width: 1;
-  shape-rendering: crispedges;
-}
-
 .title {
   font-size: 10px;
   font-weight: bold;
