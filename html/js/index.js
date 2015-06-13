@@ -40,10 +40,13 @@
     // Add the metro title to each plot
     plot.append('text')
       .attr('class', 'title')
-      .text(function(d) {
-        var parts = d.key.split(',')
-        return parts[0].split('-')[0].split('/')[0] + ', ' + parts[1].split('-')[0]
-      })
+      .text(formatMetroName)
+  }
+
+  // Private - Simplify metro name to the first metro and state
+  function formatMetroName(tract) {
+    var parts = tract.key.split(',')
+    return parts[0].split('-')[0].split('/')[0] + ', ' + parts[1].split('-')[0]
   }
 
   d3.json('/metros.json', render)
