@@ -28,6 +28,16 @@
         populationMin   = d3.min(metros, function(d) { return d.values.populationExtent[0] }),
         populationMax   = d3.max(metros, function(d) { return d.values.populationExtent[1] }),
         povertyCountMin = d3.min(metros, function(d) { return d.values.povcountExtent[0] }),
+    // Create an ordinal x-axis scale to position each year of data along the x axis
+    var x = d3.scale.ordinal()
+      .domain(d3.range(years.length))
+      .rangePoints([0, plotWidth])
+
+    // Create a linear y-axis scale to position each year node based on the rate
+    // of poverty for each tract
+    var y = d3.scale.linear()
+      .domain([povertyRateMin, povertyRateMax])
+      .range([height, 0])
 
     console.log(populationMin, populationMax, povertyCountMin, povertyCountMax);
     // Create the main SVG container element with the proper size
