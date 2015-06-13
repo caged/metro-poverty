@@ -45,9 +45,10 @@ function rollup(tracts) {
     }
 
     // Convert properties like pop70, pop80, etc. into arrays
-    obj.population  = years.map(function(y) { return tract['pop' + y]})
-    obj.povcount    = years.map(function(y) { return tract['npov' + y]})
-    obj.povrate     = years.map(function(y) { return tract['pov' + y + 'rate']})
+    // Round totals to nearest whole number and rates to two decimal places
+    obj.population  = years.map(function(y) { return Math.round(tract['pop' + y]) })
+    obj.povcount    = years.map(function(y) { return Math.round(tract['npov' + y]) })
+    obj.povrate     = years.map(function(y) { return +tract['pov' + y + 'rate'].toFixed(2) })
 
     // Track all counts so we can easily get extents for the values later
     pops = pops.concat(obj.population)
