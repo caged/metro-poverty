@@ -1,0 +1,95 @@
+#!/usr/bin/env node
+var fs = require('fs'),
+    util = require('util'),
+    d3 = require('d3')
+
+var data = fs.readFileSync('data/csv/lost_in_place.csv', 'utf-8'),
+    rows = d3.csv.parse(data, typeify),
+    years = ['70', '80', '90', '00', '10']
+
+// Rollup flat CSV data into a structured JSON object suitable for later
+// visualization
+var metros = d3.nest()
+  .key(function(d) { return d.cbsa_title })
+  .rollup(rollup)
+  .entries(rows)
+
+process.stdout.write(JSON.stringify(metros))
+
+// Format tract-level data by metro area into a more JSON-friendly format for
+// later visualiation.  Also compute some aggregates across the metro area for
+// rebounded tracts, newly poor, less poor, chronically poor and fallen star.
+//
+// The returned population, povcount and povrate properties are an array in
+// decennial year order [70, 80, 90, 00, 10]
+//
+// tracts - An {Array} of tracts belonging to a single metro area
+//
+// Returns an {Array} of various statistical data about tracts
+function rollup(tracts) {
+  var total = tracts.length,
+      out = { tracts: [] },
+      rebounded     = 0,
+      lesspoor      = 0,
+      chroniclypoor = 0,
+      newlypoor     = 0,
+      fallenstar    = 0,
+      pops          = [],
+      povcs         = [],
+      povrs         = []
+
+  tracts.forEach(function(tract) {
+    var obj = {
+      id: tract.tractid,
+      milesfromcenter: tract.coredistm
+    }
+
+    // Convert properties like pop70, pop80, etc. into arrays
+    obj.population  = years.map(function(y) { return tract['pop' + y]})
+    obj.povcount    = years.map(function(y) { return tract['npov' + y]})
+    obj.povrate     = years.map(function(y) { return tract['pov' + y + 'rate']})
+
+    // Track all counts so we can easily get extents for the values later
+    pops = pops.concat(obj.population)
+    povcs = povcs.concat(obj.povcount)
+    povrs = povrs.concat(obj.povrate)
+
+    // Count the classifications of each tract
+    if(tract.rebounded != 'NA')     rebounded += 1
+    if(tract.less_poor != 'NA')     lesspoor  += 1
+    if(tract.chrnicly_poor != 'NA') chroniclypoor += 1
+    if(tract.newly_poor != 'NA')    newlypoor += 1
+    if(tract.fallen_star != 'NA')   fallenstar += 1
+
+    out.tracts.push(obj)
+  })
+
+  out.rebounded     = rebounded
+  out.lessPoor      = lesspoor
+  out.chroniclyPoor = chroniclypoor
+  out.newlyPoor     = newlypoor
+  out.fallenStar    = fallenstar
+  out.total         = total
+
+  // Compute extents of all tracts belonging to this metro
+  out.populationExtent = d3.extent(pops)
+  out.povcountExtent = d3.extent(povcs)
+  out.povrateExtent = d3.extent(povrs)
+
+  return out
+}
+
+// Covert keys whose values look like numbers to numbers
+//
+// row - object row from csv data
+//
+// returns an {Object}
+function typeify(row) {
+  var keys = Object.keys(row)
+  keys.forEach(function(k) {
+    var val = row[k]
+    if(!isNaN(val)) row[k] = +val
+  })
+
+  return row
+}

@@ -1,0 +1,52 @@
+#!/usr/bin/env node
+var fs = require('fs'),
+    util = require('util'),
+    d3 = require('d3')
+
+var data = fs.readFileSync('data/csv/lost_in_place.csv', 'utf-8'),
+    rows = d3.csv.parse(data, typeify),
+    years = ['70', '80', '90', '00', '10']
+
+var metros = d3.nest()
+  .key(function(d) { return d.cbsa_title })
+  .rollup(rollup)
+  .entries(rows)
+
+process.stdout.write(JSON.stringify(metros))
+
+function rollup(tracts) {
+  var count           = tracts.length,
+      popmeans        = [],
+      popmedians      = [],
+      povratemeans    = [],
+      povratemedians  = []
+
+  years.forEach(function(year) {
+    var popmean       = d3.mean(tracts, function(d) { return d['pop' + year]}),
+        popmedian     = d3.median(tracts, function(d) { return d['pop' + year]}),
+        povratemean   = d3.mean(tracts, function(d) { return d['pov' + year + 'rate']}),
+        povratemedian = d3.median(tracts, function(d) { return d['pov' + year + 'rate']})
+
+    popmeans.push({ year: year, val: popmean })
+    popmedians.push({ year: year, val: popmedian })
+    povratemeans.push({ year: year, val: povratemean })
+    povratemedians.push({ year: year, val: povratemedian })
+  })
+
+  return {
+    popmeans: popmeans,
+    popmedians: popmedians,
+    povratemeans: povratemeans,
+    povratemedians: povratemedians
+  }
+}
+
+function typeify(row) {
+  var keys = Object.keys(row)
+  keys.forEach(function(k) {
+    var val = row[k]
+    if(!isNaN(val)) row[k] = +val
+  })
+
+  return row
+}
