@@ -15,8 +15,12 @@
       .size([width, height])
       .padding([0.1, 0.1])
 
-    var poveryRateMin   = 0,
-        poveryRateMax   = 100,
+    metros = grid(metros)
+
+    var plotSize   = grid.nodeSize(),
+        plotWidth  = plotSize[0],
+        plotHeight = plotSize[1]
+
         populationMin   = d3.min(metros, function(d) { return d.values.populationExtent[0] }),
         populationMax   = d3.max(metros, function(d) { return d.values.populationExtent[1] }),
         povertyCountMin = d3.min(metros, function(d) { return d.values.povcountExtent[0] }),
