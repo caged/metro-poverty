@@ -21,10 +21,13 @@
         plotWidth  = plotSize[0],
         plotHeight = plotSize[1]
 
+    // Establishes some extents so we can create global scales for relative
+    // sizing
+    var povertyRateMin  = 0,
+        povertyRateMax  = 100,
         populationMin   = d3.min(metros, function(d) { return d.values.populationExtent[0] }),
         populationMax   = d3.max(metros, function(d) { return d.values.populationExtent[1] }),
         povertyCountMin = d3.min(metros, function(d) { return d.values.povcountExtent[0] }),
-        povertyCountMax = d3.max(metros, function(d) { return d.values.povcountExtent[1] })
 
     console.log(populationMin, populationMax, povertyCountMin, povertyCountMax);
     // Create the main SVG container element with the proper size
