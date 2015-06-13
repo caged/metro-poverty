@@ -28,6 +28,9 @@
         populationMin   = d3.min(metros, function(d) { return d.values.populationExtent[0] }),
         populationMax   = d3.max(metros, function(d) { return d.values.populationExtent[1] }),
         povertyCountMin = d3.min(metros, function(d) { return d.values.povcountExtent[0] }),
+        povertyCountMax = d3.max(metros, function(d) { return d.values.povcountExtent[1] }),
+        years           = ['70', '80', '90', '00', '10']
+
     // Create an ordinal x-axis scale to position each year of data along the x axis
     var x = d3.scale.ordinal()
       .domain(d3.range(years.length))
