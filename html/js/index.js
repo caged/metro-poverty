@@ -52,7 +52,7 @@
 
     // Create and position a plot for each metro area
     var plot = vis.selectAll('.plot')
-      .data(grid(metros))
+      .data(metros)
     .enter().append('g')
       .attr('transform', function(d) { return "translate(" + d.x + "," + d.y + ")" })
       .attr('class', 'plot')
