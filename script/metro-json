@@ -29,16 +29,16 @@ process.stdout.write(JSON.stringify(metros, null, 2))
 //
 // Returns an {Array} of various statistical data about tracts
 function rollup(tracts) {
-  var total = tracts.length,
-      out = { tracts: [] },
-      rebounded     = 0,
-      lesspoor      = 0,
-      chroniclypoor = 0,
-      newlypoor     = 0,
-      fallenstar    = 0,
-      pops          = [],
-      povcs         = [],
-      povrs         = []
+  var total           = tracts.length,
+      out             = { tracts: [] },
+      rebounded       = 0,
+      lesspoor        = 0,
+      chronicallypoor = 0,
+      newlypoor       = 0,
+      fallenstar      = 0,
+      pops            = [],
+      povcs           = [],
+      povrs           = []
 
   tracts.forEach(function(tract) {
     var obj = {
@@ -46,7 +46,7 @@ function rollup(tracts) {
       milesfromcenter: tract.coredistm,
       rebounded: 0,
       lessPoor: 0,
-      chroniclyPoor: 0,
+      chronicallyPoor: 0,
       newlyPoor: 0,
       fallenStar: 0
     }
@@ -63,21 +63,21 @@ function rollup(tracts) {
     povrs = povrs.concat(obj.povrate)
 
     // Count the classifications of each tract
-    if(tract.rebounded != 'NA')     obj.rebounded = 1; rebounded += 1
-    if(tract.less_poor != 'NA')     obj.lessPoor = 1; lesspoor  += 1
-    if(tract.chrnicly_poor != 'NA') obj.chroniclyPoor = 1; chroniclypoor += 1
-    if(tract.newly_poor != 'NA')    obj.newlyPoor = 1; newlypoor += 1
-    if(tract.fallen_star != 'NA')   obj.fallenStar = 1; fallenstar += 1
+    if(tract.rebounded != 'NA')         obj.rebounded = 1; rebounded += 1
+    if(tract.less_poor != 'NA')         obj.lessPoor = 1; lesspoor  += 1
+    if(tract.chronically_poor != 'NA')  obj.chronicallyPoor = 1; chronicallypoor += 1
+    if(tract.newly_poor != 'NA')        obj.newlyPoor = 1; newlypoor += 1
+    if(tract.fallen_star != 'NA')       obj.fallenStar = 1; fallenstar += 1
 
     out.tracts.push(obj)
   })
 
-  out.rebounded     = rebounded
-  out.lessPoor      = lesspoor
-  out.chroniclyPoor = chroniclypoor
-  out.newlyPoor     = newlypoor
-  out.fallenStar    = fallenstar
-  out.total         = total
+  out.rebounded       = rebounded
+  out.lessPoor        = lesspoor
+  out.chronicallyPoor = chronicallypoor
+  out.newlyPoor       = newlypoor
+  out.fallenStar      = fallenstar
+  out.total           = total
 
   // Compute extents of all tracts belonging to this metro
   out.populationExtent = d3.extent(pops)
