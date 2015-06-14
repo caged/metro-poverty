@@ -46,8 +46,15 @@ body {
 }
 
 .divider {
+  stroke: #333;
+  stroke-width: 1;
+  shape-rendering: crispedges;
+}
+
+.reference-line {
   stroke: #aaa;
   stroke-width: 1;
+  stroke-dasharray: 3 1;
   shape-rendering: crispedges;
 }
 
@@ -72,6 +79,11 @@ body {
  *---------------------------------------------- */
  .domain {
    fill: none;
+ }
+
+ .y-rate-label {
+  font-size: 9px;
+  text-anchor: end;
  }
 
  .axis text {

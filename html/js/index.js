@@ -1,6 +1,8 @@
 (function() {
 
   function render(metros) {
+    var measure = 'newlyPoor'
+
     // Basic set up of dimensions and sizes
     var el = d3.select('.js-canvas'),
        margin = { top: 20, right: 10, bottom: 10, left: 10 },
@@ -69,7 +71,7 @@
 
     // Crate a linear gradient to use later in our paths
     vis.append('linearGradient')
-      .attr('id', 'fallen-star-gradient')
+      .attr('id', 'plus-minus-gradient')
       .attr('gradientUnits', 'userSpaceOnUse')
       .attr('x1', 0).attr('y1', y(povertyRateMin))
       .attr('x2', 0).attr('y2', y(povertyRateMax))
@@ -87,6 +89,11 @@
       .attr('class', function(d, i) { return 'plot ' + 'plot-' + i })
     .append('g')
       .attr('transform', function(d) { return 'translate(' + plotMargin.left + ',' + plotMargin.top + ')' })
+
+    vis.select('.plot').append('text')
+      .attr('class', 'y-rate-label')
+      .attr('transform', 'translate(10,10)rotate(-90)')
+      .text('Poverty rate 0-100%')
 
     // Create a horizontal divider line
     plot.append('line')
@@ -128,9 +135,15 @@
       .classed('chronically-poor', function(d) { return d.chronicallyPoor })
       .attr('d', function(d) { return  path(d.povrate) })
       .style('stroke', function(d) {
-        if(d.fallenStar) return 'url(#fallen-star-gradient)'
+        if(d.fallenStar) return 'url(#plus-minus-gradient)'
       })
 
+    plot.append('line')
+      .attr('class', 'reference-line')
+      .attr('x1', 0)
+      .attr('x2', plotWidth + plotMargin.left + plotMargin.right)
+      .attr('y1', y(30))
+      .attr('y2', y(30))
   }
 
   // Private - Simplify metro name to the first metro and state
@@ -139,6 +152,14 @@
     return parts[0].split('-')[0].split('/')[0] + ', ' + parts[1].split('-')[0]
   }
 
+  // Generate a linearGradient-friendly array of color stops using the
+  // HCL color space.
+  //
+  // count - number of stops
+  // colorFrom - the color to start from
+  // colorTo - the color to end with
+  //
+  // Returns an {Array} of color stop objects
   function generateColorStops(count, colorFrom, colorTo) {
     count -= 1
     var stops = [],
