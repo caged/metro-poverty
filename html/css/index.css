@@ -74,20 +74,27 @@ body {
    fill: none;
  }
 
- .y-rate-label {
+.axis text {
   font-size: 9px;
-  text-anchor: end;
- }
+}
 
- .axis text {
+ .x.axis text {
    display: none;
-   font-size: 9px;
  }
 
  .axis line {
    stroke: #e1e1e1;
    stroke-width: 0.5;
    shape-rendering: crispedges;
+ }
+
+ .y.axis line {
+   display: none;
+ }
+
+ .y.axis text {
+   fill: #ccc;
+   font-size: 7px;
  }
 
  .x .tick:first-child line,

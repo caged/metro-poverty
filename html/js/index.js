@@ -19,6 +19,7 @@
 
     metros = grid(metros)
 
+    // Get some sizes for each individual plot
     var plotSize   = grid.nodeSize(),
         plotWidth  = plotSize[0],
         plotHeight = plotSize[1]
@@ -55,6 +56,11 @@
       .tickFormat(function(d, i) { return years[i] })
       .tickPadding(5)
 
+    var yax = d3.svg.axis()
+      .scale(y)
+      .tickValues([25, 75])
+      .orient('left')
+
     // Initialize a path generator so we can create a path for each tract
     // in a metro area.
     var path = d3.svg.line()
@@ -90,11 +96,6 @@
     .append('g')
       .attr('transform', function(d) { return 'translate(' + plotMargin.left + ',' + plotMargin.top + ')' })
 
-    vis.select('.plot').append('text')
-      .attr('class', 'y-rate-label')
-      .attr('transform', 'translate(10,10)rotate(-90)')
-      .text('Poverty rate 0-100%')
-
     // Create a horizontal divider line
     plot.append('line')
       .attr('class', 'divider')
@@ -113,7 +114,10 @@
       .attr('class', 'title')
       .attr('x', plotWidth / 2)
       .attr('y', -5)
-      .text(formatMetroName)
+      .text(function(d) {
+        console.log(d.values.fallenStar, d.values.total);
+        return formatMetroName(d.key) + ' (+' + d3.format('%')(d.values.fallenStar / d.values.total) + ')'
+      })
 
     // Add a group to house all tract lines for poverty rates
     var rates = plot.append('g')
@@ -138,11 +142,15 @@
         if(d.fallenStar) return 'url(#plus-minus-gradient)'
       })
 
+    plot.append('g')
+      .attr('transform', 'translate(20, 0)')
+      .attr('class', 'axis y')
+      .call(yax)
   }
 
   // Private - Simplify metro name to the first metro and state
-  function formatMetroName(tract) {
-    var parts = tract.key.split(',')
+  function formatMetroName(name) {
+    var parts = name.split(',')
     return parts[0].split('-')[0].split('/')[0] + ', ' + parts[1].split('-')[0]
   }
 
