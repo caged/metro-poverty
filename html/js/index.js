@@ -138,12 +138,6 @@
         if(d.fallenStar) return 'url(#plus-minus-gradient)'
       })
 
-    plot.append('line')
-      .attr('class', 'reference-line')
-      .attr('x1', 0)
-      .attr('x2', plotWidth + plotMargin.left + plotMargin.right)
-      .attr('y1', y(30))
-      .attr('y2', y(30))
   }
 
   // Private - Simplify metro name to the first metro and state
