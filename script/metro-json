@@ -16,7 +16,7 @@ var metros = d3.nest()
 
 // Write the JSON results to stdout which can then be piped into a JSON file.
 // script/metro-json > metros.json
-process.stdout.write(JSON.stringify(metros, null, 2))
+process.stdout.write(JSON.stringify(metros))
 
 // Format tract-level data by metro area into a more JSON-friendly format for
 // later visualiation.  Also compute some aggregates across the metro area for
@@ -63,11 +63,11 @@ function rollup(tracts) {
     povrs = povrs.concat(obj.povrate)
 
     // Count the classifications of each tract
-    if(tract.rebounded != 'NA')         obj.rebounded = 1; rebounded += 1
-    if(tract.less_poor != 'NA')         obj.lessPoor = 1; lesspoor  += 1
-    if(tract.chronically_poor != 'NA')  obj.chronicallyPoor = 1; chronicallypoor += 1
-    if(tract.newly_poor != 'NA')        obj.newlyPoor = 1; newlypoor += 1
-    if(tract.fallen_star != 'NA')       obj.fallenStar = 1; fallenstar += 1
+    if(tract.rebounded != 'NA') {        obj.rebounded = 1; rebounded += 1 }
+    if(tract.less_poor != 'NA') {        obj.lessPoor = 1; lesspoor  += 1 }
+    if(tract.chronically_poor != 'NA') {  obj.chronicallyPoor = 1; chronicallypoor += 1 }
+    if(tract.newly_poor != 'NA') {      obj.newlyPoor = 1; newlypoor += 1 }
+    if(tract.fallen_star != 'NA') {     obj.fallenStar = 1; fallenstar += 1 }
 
     out.tracts.push(obj)
   })
