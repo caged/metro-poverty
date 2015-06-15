@@ -1,1 +1,2 @@
 data/gz/tiger/*.zip filter=lfs diff=lfs merge=lfs -crlf
+data/gz/nhgis_tract_2010.zip filter=lfs diff=lfs merge=lfs -crlf
