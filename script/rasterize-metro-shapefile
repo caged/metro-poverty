@@ -1,0 +1,108 @@
+#!/usr/bin/env node
+
+var d3 = require('d3'),
+    shapefile = require('shapefile'),
+    Canvas = require('canvas'),
+    minimist = require('minimist'),
+    queue = require('queue-async'),
+    fs = require('fs')
+
+var argv = minimist(process.argv.slice(2))
+    input = argv.in,
+    output = argv.out,
+    width = argv.width || 500,
+    height = argv.height || 500,
+    bbox = null,
+    count = 1
+
+if(!input || !output)
+  return console.log("Supply arguments --in SHAPEFILE --out IMAGE");
+
+var reader = shapefile.reader(input || '/dev/stdin'),
+    writer = fs.createWriteStream(output)
+
+var canvas = new Canvas(width, height),
+    context = canvas.getContext('2d')
+
+var projection = d3.geo.albersUsa()
+  .scale(1)
+  .translate([width / 2, 0])
+
+var path = d3.geo.path()
+  .projection(projection)
+  .context(context)
+  .pointRadius(1);
+
+context.fillStyle = 'none'
+context.strokeStyle = '#777'
+context.lineWidth = 0.5
+context.lineJoin = 'round'
+
+queue(1)
+  .defer(readHeader)
+  .defer(readAllRecords)
+  .defer(close)
+  .await(function(error) { if (error) throw error })
+
+function readHeader(callback) {
+  reader.readHeader(function(error, header) {
+    if (error) return callback(error)
+
+    projection.scale(1).translate([0, 0])
+    bbox = header.bbox
+
+    var g = {
+       type: "FeatureCollection",
+       features: [{
+           type: "Feature",
+           geometry: {
+             type: "Polygon",
+             properties: null,
+             coordinates: [[
+                 [ bbox[0], bbox[1] ],
+                 [ bbox[0], bbox[3] ],
+                 [ bbox[2], bbox[3] ],
+                 [ bbox[2], bbox[1] ],
+                 [ bbox[0], bbox[1] ]
+               ]]
+           }
+         }]}
+
+    b = path.bounds(g)
+    console.log(b);
+    s = .99 / Math.max((b[1][0] - b[0][0]) / width, (b[1][1] - b[0][1]) / height)
+    t = [(width - s * (b[1][0] + b[0][0])) / 2, (height - s * (b[1][1] + b[0][1])) / 2]
+    projection.scale(s).translate(t)
+    callback(null)
+  })
+}
+
+function readAllRecords(callback) {
+  (function readRecord() {
+    reader.readRecord(function(error, record) {
+      if (error) return callback(error)
+
+      if (record === shapefile.end) {
+        canvas.pngStream().pipe(writer)
+        return callback(null)
+      }
+
+      console.log('Reading record ' + count);
+      context.beginPath()
+      path(record)
+      context.stroke()
+
+      count += 1
+      process.nextTick(readRecord)
+    })
+  })()
+}
+
+function close(callback) {
+  reader.close(function(error) {
+    if (error) return callback(error)
+    console.log('Writing ' + output + '...');
+    writer.end()
+    callback(null)
+  })
+}
