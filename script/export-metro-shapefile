@@ -1,0 +1,31 @@
+#/bin/sh
+
+set -e
+
+usage() {
+  echo "Usage: $0 [-d database name] [-m metro name]" 1>&2; exit 1;
+}
+
+while getopts ":d:m:" opt; do
+  case ${opt} in
+    d) db_name=$OPTARG;;
+    m) metro_name=$OPTARG;;
+    *) usage;;
+  esac
+done
+
+if [[ -z $db_name || -z $metro_name ]]; then usage; fi
+
+metro_name=`echo $metro_name | tr '[:upper:]' '[:lower:]'`
+metro_file_name=`echo $metro_name | tr -cd '[[:alnum:]]._-'`
+
+tmp_dir=`mktemp -d -t metro-poverty`
+out_file="$tmp_dir/$metro_file_name.shp"
+
+echo "Generating $out_file"
+
+pgsql2shp -g geom_reprojected -f $out_file $db_name \
+  "select *, st_transform(geom, 2163) as geom_reprojected \
+  from tract_data \
+  inner join tracts on tracts.geoid10 = tract_data.tractid \
+  where lower(cbsa_title) = '$metro_name';"
