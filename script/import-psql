@@ -1,0 +1,21 @@
+#!/bin/bash
+
+set -e
+
+db_name=$1
+
+if [[ -z $db_name  ]]; then
+  echo 'No database name given: script/import-psql $DB_NAME';
+  exit
+fi
+
+dropdb --if-exists -i $db_name
+createdb $db_name
+
+psql -c 'create extension postgis' $db_name
+psql -f sql/schema.sql $db_name
+
+# Download and extract data
+make data/gz/nhgis_tract_2010.zip
+
+shp2pgsql -W "latin1" -I -D -d -i -s 4326 data/shp/US_tract_2010.shp tracts | psql -d $db_name
