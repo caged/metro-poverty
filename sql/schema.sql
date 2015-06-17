@@ -1,5 +1,5 @@
 CREATE TABLE tract_data(
-	"tractid" bigint NOT NULL,
+	"tractid" text NOT NULL,
 	"state" text NOT NULL,
 	"county" text NOT NULL,
 	"tract" text NOT NULL,
