@@ -28,4 +28,5 @@ psql -c 'create index cbsa_title_idx on tract_data (lower(cbsa_title))' $db_name
 # Download and extract data
 make data/gz/nhgis_tract_2010.zip
 
-shp2pgsql -W "latin1" -I -D -d -i -s 4326 data/shp/US_tract_2010.shp tracts | psql -d $db_name
+# Import the shape data to postgres
+shp2pgsql -I -D -s 4326 data/shp/nhgis_tract_2010.shp tracts | psql -d $db_name
