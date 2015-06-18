@@ -14,8 +14,7 @@ var argv = minimist(process.argv.slice(2))
     output = argv.out,
     width = argv.width || 1500,
     height = argv.height || 1500,
-    bbox = null,
-    count = 1
+    bbox = null
 
 if(!input || !output)
   return console.log("Supply arguments --in SHAPEFILE --out IMAGE");
@@ -67,8 +66,16 @@ function drawTract(record) {
       povRateDiff = (props.POV10RATE - props.POV70RATE).toFixed(1),
       pixelChange = povRateScale(povRateDiff)
 
+
+  if(props.REBOUNDED != 'NA') {
+    context.fillStyle = 'rgba(156,205,88, 0.8)'
+  } else {
+    context.fillStyle = '#fff'
+  }
+
   context.beginPath()
   path(record)
+  context.fill()
   context.stroke()
 
   context.save()
@@ -77,10 +84,10 @@ function drawTract(record) {
 
   if(povRateDiff >= 0) {
     context.strokeStyle = '#FF483B'
-    arrow(centroid[0], centroid[1], centroid[0] - (pixelChange / .5), centroid[1] + pixelChange)
+    arrow(centroid[0], centroid[1], centroid[0] + (pixelChange / .5), centroid[1] - pixelChange)
   } else {
     context.strokeStyle = '#5E5BE2'
-    arrow(centroid[0], centroid[1], centroid[0] + (pixelChange / .5), centroid[1] - pixelChange)
+    arrow(centroid[0], centroid[1], centroid[0] - (pixelChange / .5), centroid[1] + pixelChange)
   }
 
   context.stroke()
@@ -100,22 +107,10 @@ function readHeader(callback) {
     projection.scale(1).translate([0, 0])
     bbox = header.bbox
 
-    var g = {
-       type: "FeatureCollection",
-       features: [{
-           type: "Feature",
-           geometry: {
-             type: "Polygon",
-             properties: null,
-             coordinates: [[
-                 [ bbox[0], bbox[1] ],
-                 [ bbox[0], bbox[3] ],
-                 [ bbox[2], bbox[3] ],
-                 [ bbox[2], bbox[1] ],
-                 [ bbox[0], bbox[1] ]
-               ]]
-           }
-         }]}
+    var g = { type: "FeatureCollection",
+              features: [{ type: "Feature",
+              geometry: { type: "Polygon", coordinates: [[ [ bbox[0], bbox[1] ], [ bbox[0], bbox[3] ], [ bbox[2], bbox[3] ], [ bbox[2], bbox[1] ], [ bbox[0], bbox[1] ] ]] }}]
+            }
 
     b = path.bounds(g)
     s = .99 / Math.max((b[1][0] - b[0][0]) / width, (b[1][1] - b[0][1]) / height)
@@ -137,7 +132,6 @@ function readAllRecords(callback) {
 
       drawTract(record)
 
-      count += 1
       process.nextTick(readRecord)
     })
   })()
