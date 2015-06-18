@@ -20,7 +20,7 @@ if(!input || !output)
   return console.log("Supply arguments --in SHAPEFILE --out IMAGE");
 
 // Define output
-var writer = fs.createWriteStream(output)
+var outfile = fs.createWriteStream(output)
 
 // Basic canvas setup
 var canvas = new Canvas(width, height),
@@ -52,7 +52,7 @@ shapefile.read(input, function render(error, collection) {
   scaleForBoundingBox(collection.bbox)
   renderTracts(collection.features)
   renderArrows(collection.features)
-  canvas.pngStream().pipe(writer)
+  canvas.pngStream().pipe(outfile)
 })
 
 //  Draw an individual tract to the canvas
