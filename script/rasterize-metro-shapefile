@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+// Include our dependencies
 var d3 = require('d3'),
     shapefile = require('shapefile'),
     Canvas = require('canvas'),
@@ -7,43 +8,68 @@ var d3 = require('d3'),
     queue = require('queue-async'),
     fs = require('fs')
 
+// Setup some options
 var argv = minimist(process.argv.slice(2))
     input = argv.in,
     output = argv.out,
-    width = argv.width || 500,
-    height = argv.height || 500,
+    width = argv.width || 1500,
+    height = argv.height || 1500,
     bbox = null,
     count = 1
 
 if(!input || !output)
   return console.log("Supply arguments --in SHAPEFILE --out IMAGE");
 
+// Define IO
 var reader = shapefile.reader(input || '/dev/stdin'),
     writer = fs.createWriteStream(output)
 
+// Basic canvas setup
 var canvas = new Canvas(width, height),
-    context = canvas.getContext('2d')
+    context = canvas.getContext('2d'),
+    projection = d3.geo.albersUsa(),
+    colors = ["#9FC449",
+              "#BD5BB5",
+              "#AC513C",
+              "#529872",
+              "#666998"]
 
-var projection = d3.geo.albersUsa()
-  .scale(1)
-  .translate([width / 2, 0])
-
+// Create a path generator for drawing tracts
 var path = d3.geo.path()
   .projection(projection)
   .context(context)
-  .pointRadius(1);
+  .pointRadius(1)
 
-context.fillStyle = 'none'
+// Basic styling for tracts
+context.fillStyle = '#fff'
 context.strokeStyle = '#777'
 context.lineWidth = 0.5
 context.lineJoin = 'round'
+context.antialias = 'subpixel'
 
+// Kick off the rendering process
 queue(1)
   .defer(readHeader)
   .defer(readAllRecords)
   .defer(close)
   .await(function(error) { if (error) throw error })
 
+//  Draw an individual tract to the canvas
+//
+// record - A GeoJSON feature object
+//
+// Returns nothing
+function drawTract(record) {
+  context.beginPath()
+  path(record)
+  context.stroke()
+}
+
+// Read the header.  The complexity here is smart scaling of geometry.
+//
+// callback - the callback to invoke after the process is complete
+//
+// Returns nothing
 function readHeader(callback) {
   reader.readHeader(function(error, header) {
     if (error) return callback(error)
@@ -69,7 +95,6 @@ function readHeader(callback) {
          }]}
 
     b = path.bounds(g)
-    console.log(b);
     s = .99 / Math.max((b[1][0] - b[0][0]) / width, (b[1][1] - b[0][1]) / height)
     t = [(width - s * (b[1][0] + b[0][0])) / 2, (height - s * (b[1][1] + b[0][1])) / 2]
     projection.scale(s).translate(t)
@@ -87,10 +112,7 @@ function readAllRecords(callback) {
         return callback(null)
       }
 
-      console.log('Reading record ' + count);
-      context.beginPath()
-      path(record)
-      context.stroke()
+      drawTract(record)
 
       count += 1
       process.nextTick(readRecord)
