@@ -23,6 +23,7 @@ pgsql2shp  -f $out_file $db_name \
   "select * \
   from tract_data \
   inner join tracts on tracts.geoid10 = tract_data.tractid \
-  where cbsa_num = '$metro_id';" > /dev/null 2>&1
+  where cbsa_num = '$metro_id' and \
+  tracts.geoid10 not in('32003005902', '22075050100');" > /dev/null 2>&1
 
 echo $out_file
