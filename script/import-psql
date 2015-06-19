@@ -21,6 +21,8 @@ psql -f sql/schema.sql $db_name
 cat data/csv/lost_in_place.csv | \
   psql -c "copy tract_data from stdin with csv header delimiter ',' NULL E'' quote '\"'" $db_name
 
+psql -c "update tract_data set tractid = lpad(tractid, 11, '0')" $db_name
+
 # Create a couple of useful indexes
 psql -c 'create unique index tract_id_idx on tract_data (tractid)' $db_name
 psql -c 'create index cbsa_title_idx on tract_data (lower(cbsa_title))' $db_name
