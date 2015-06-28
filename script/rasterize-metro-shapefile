@@ -126,41 +126,41 @@ function renderMeta(collection) {
       measures = context.measureText(name),
       txtWidth = measures.width,
       txtHeight = measures.actualBoundingBoxAscent + measures.actualBoundingBoxDescent,
-      arrowWidth = 50
-
+      arrowWidth = povRateScale(50),
+      spacing    = 20
 
   context.fillStyle = '#222'
-  context.fillText(name, (width - (txtWidth)) / 2, txtHeight + 20)
+  context.fillText(name, (width - (txtWidth)) / 2, txtHeight + spacing)
 
+  context.font = 'normal 22px OpenSans'
   txtWidth = context.measureText(subtitle).width
-  context.font = 'normal 25px OpenSans'
   context.fillStyle = '#555'
-  context.fillText(subtitle, (width - (txtWidth)) / 2, txtHeight + 55)
+  context.fillText(subtitle, (width - (txtWidth)) / 2, txtHeight + (spacing * 3))
 
   context.lineWidth = 2
 
   context.beginPath()
   context.strokeStyle = '#FF483B'
-  arrow(20, txtHeight + 3, arrowWidth, txtHeight + 3)
+  arrow(spacing, txtHeight + 45, arrowWidth + spacing, txtHeight + spacing * 2)
   context.stroke()
 
   context.beginPath()
   context.strokeStyle = '#5E5BE2'
-  arrow(arrowWidth, txtHeight + 43, 20, txtHeight + 43)
+  arrow(arrowWidth + spacing, txtHeight, spacing, txtHeight + 5)
   context.stroke()
 
   context.beginPath()
   context.fillStyle = 'rgba(156,205,88, 0.8)'
-  context.fillRect(20, txtHeight + 70, 20, 20)
+  context.fillRect(spacing, txtHeight + 70, arrowWidth, spacing)
 
   context.fillStyle = '#333'
   context.font = 'normal 20px OpenSans'
-  context.fillText('Poverty increase', arrowWidth + 20, txtHeight + 10)
-  context.fillText('Poverty decrease', arrowWidth + 20, txtHeight + 50)
-  context.fillText('Rebounded from poverty', arrowWidth + 20, txtHeight + 87)
+  context.fillText('Poverty decrease', arrowWidth + spacing * 2, txtHeight + 10)
+  context.fillText('Poverty increase', arrowWidth + spacing * 2, txtHeight + 50)
+  context.fillText('Rebounded from poverty', arrowWidth + spacing * 2, txtHeight + 87)
 
   context.fillStyle = '#aaa'
-  context.fillText('Justin Palmer labratrevenge.com / Source: City Observatory "Lost In Place" report cityobservatory.org', 20, height - 20)
+  context.fillText('Justin Palmer / @Caged / labratrevenge.com - Source: City Observatory "Lost In Place" / cityobservatory.org', 20, height - 20)
 }
 
 // Read the header.  The complexity here is smart scaling of geometry.
@@ -176,7 +176,7 @@ function scaleForBoundingBox(bbox) {
             geometry: { type: "Polygon", coordinates: [[ [ bbox[0], bbox[1] ], [ bbox[0], bbox[3] ], [ bbox[2], bbox[3] ], [ bbox[2], bbox[1] ], [ bbox[0], bbox[1] ] ]] }}]}
 
   b = path.bounds(g)
-  s = .99 / Math.max((b[1][0] - b[0][0]) / width, (b[1][1] - b[0][1]) / height)
+  s = .95 / Math.max((b[1][0] - b[0][0]) / width, (b[1][1] - b[0][1]) / height)
   t = [(width - s * (b[1][0] + b[0][0])) / 2, (height - s * (b[1][1] + b[0][1])) / 2]
 
   projection.scale(s).translate(t)
@@ -184,8 +184,8 @@ function scaleForBoundingBox(bbox) {
 
 
 // Draw an arrow on canvas.  See http://stackoverflow.com/a/6333775
-function arrow(fromx, fromy, tox, toy) {
-  var headlen = 6;   // length of head in pixels
+function arrow(fromx, fromy, tox, toy, headlen) {
+  var headlen = headlen || 6
   var angle = Math.atan2(toy - fromy,tox - fromx)
   context.moveTo(fromx, fromy)
   context.lineTo(tox, toy)
