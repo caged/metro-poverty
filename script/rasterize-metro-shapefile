@@ -4,9 +4,11 @@
 var d3 = require('d3'),
     shapefile = require('shapefile'),
     Canvas = require('canvas'),
+    Font = Canvas.Font,
     minimist = require('minimist'),
     queue = require('queue-async'),
-    fs = require('fs')
+    fs = require('fs'),
+    path = require('path')
 
 // Setup some options
 var argv = minimist(process.argv.slice(2))
@@ -14,17 +16,21 @@ var argv = minimist(process.argv.slice(2))
     output = argv.out,
     width = argv.width || 1500,
     height = argv.height || 1500,
+    index = 0,
+    scale = 2,
     bbox = null
 
 if(!input || !output)
   return console.log("Supply arguments --in SHAPEFILE --out IMAGE");
 
-// Define IO
-var reader = shapefile.reader(input || '/dev/stdin'),
-    writer = fs.createWriteStream(output)
+// Define output
+var outfile = fs.createWriteStream(output)
+
+var font = new Font('OpenSans', fontFile('OpenSans-Regular'))
+font.addFace(fontFile('OpenSans-Semibold'),  'bold')
 
 // Basic canvas setup
-var canvas = new Canvas(width, height),
+var canvas = new Canvas(width * scale, height * scale),
     context = canvas.getContext('2d'),
     projection = d3.geo.albersUsa()
 
@@ -32,67 +38,129 @@ var canvas = new Canvas(width, height),
 var path = d3.geo.path()
   .projection(projection)
   .context(context)
-  .pointRadius(1)
 
-var povRateScale = d3.scale.sqrt()
-  .domain([-95, 95])
-  .range([0, 20])
+// var povRateScale = d3.scale.sqrt()
+//   .domain([-95, 95])
+//   .range([0, 20])
+var povRateScale = d3.scale.threshold()
+  .domain([-60, -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50, -60])
+  .range([28, 24, 20, 16, 12, 8, 4, 4, 8, 12, 16, 20, 24, 28])
+  // .domain([-50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50])
+  // .range([30, 25, 20, 15, 10, 5, 5, 10, 15, 20, 25, 30])
 
 // Basic styling for tracts
+context.addFont(font)
 context.fillStyle = '#fff'
 context.strokeStyle = '#aaa'
 context.lineWidth = 0.5
 context.lineJoin = 'round'
 context.antialias = 'subpixel'
+context.font = 'bold 30px OpenSans';
+context.scale(scale, scale)
 
 // Create a solid backing
 context.fillRect(0, 0, width, height)
 
-// Kick off the rendering process
-queue(1)
-  .defer(readHeader)
-  .defer(readAllRecords)
-  .defer(close)
-  .await(function(error) { if (error) throw error })
+shapefile.read(input, function render(error, collection) {
+  if(error) return console.log(error)
+
+  scaleForBoundingBox(collection.bbox)
+  renderTracts(collection.features)
+  renderArrows(collection.features)
+  renderMeta(collection)
+  canvas.pngStream().pipe(outfile)
+})
 
 //  Draw an individual tract to the canvas
 //
 // record - A GeoJSON feature object
 //
 // Returns nothing
-function drawTract(record) {
-  var props       = record.properties,
-      centroid    = path.centroid(record),
-      povRateDiff = (props.POV10RATE - props.POV70RATE).toFixed(1),
-      pixelChange = povRateScale(povRateDiff)
+function renderTracts(tracts) {
+  for (var i = 0; i < tracts.length; i++) {
+    var tract = tracts[i],
+        props = tract.properties
 
+    context.fillStyle = props.REBOUNDED != 'NA' ? 'rgba(156,205,88, 0.8)' : '#fff'
 
-  if(props.REBOUNDED != 'NA') {
-    context.fillStyle = 'rgba(156,205,88, 0.8)'
-  } else {
-    context.fillStyle = '#fff'
+    context.beginPath()
+    path(tract)
+    context.fill()
+    context.stroke()
   }
+}
 
-  context.beginPath()
-  path(record)
-  context.fill()
-  context.stroke()
+function renderArrows(tracts) {
+  var extent = d3.extent(tracts, function(d) { return d.properties.POP10 / d.properties.ALAND10 }),
+      lineWidthScale = d3.scale.linear()
+        .domain(extent)
+        .range([1, 2.5])
 
   context.save()
-  context.lineWidth = 1.5
-  context.beginPath()
+  for (var i = 0; i < tracts.length; i++) {
+    var tract = tracts[i],
+        props = tract.properties,
+        centroid    = path.centroid(tract),
+        povRateDiff = (props.POV10RATE - props.POV70RATE).toFixed(1),
+        pixelChange = povRateScale(povRateDiff),
+        lineWidth   = lineWidthScale(props.POP10 / props.ALAND10)
 
-  if(povRateDiff >= 0) {
-    context.strokeStyle = '#FF483B'
-    arrow(centroid[0], centroid[1], centroid[0] + (pixelChange / .5), centroid[1] - pixelChange)
-  } else {
-    context.strokeStyle = '#5E5BE2'
-    arrow(centroid[0], centroid[1], centroid[0] - (pixelChange / .5), centroid[1] + pixelChange)
+    context.beginPath()
+    context.lineWidth = lineWidth
+    if(povRateDiff >= 0) {
+      context.strokeStyle = '#FF483B'
+      arrow(centroid[0], centroid[1], centroid[0] + (pixelChange / .5), centroid[1] - pixelChange, lineWidth * 4)
+    } else {
+      context.strokeStyle = '#5E5BE2'
+      arrow(centroid[0], centroid[1], centroid[0] - (pixelChange / .5), centroid[1] + pixelChange, lineWidth * 4)
+    }
+
+    context.stroke()
   }
-
-  context.stroke()
   context.restore()
+}
 
+function renderMeta(collection) {
+  var name = collection.features[0].properties.CBSA_TITLE,
+      subtitle = "Change in poverty rate from 1970 to 2010"
+      measures = context.measureText(name),
+      txtWidth = measures.width,
+      txtHeight = measures.actualBoundingBoxAscent + measures.actualBoundingBoxDescent,
+      arrowWidth = povRateScale(50),
+      spacing    = 20
+
+  context.fillStyle = '#222'
+  context.fillText(name, (width - (txtWidth)) / 2, txtHeight + spacing)
+
+  context.font = 'normal 22px OpenSans'
+  txtWidth = context.measureText(subtitle).width
+  context.fillStyle = '#555'
+  context.fillText(subtitle, (width - (txtWidth)) / 2, txtHeight + (spacing * 3))
+
+  context.lineWidth = 2
+
+  context.beginPath()
+  context.strokeStyle = '#FF483B'
+  arrow(spacing, txtHeight + 45, arrowWidth + spacing, txtHeight + spacing * 2)
+  context.stroke()
+
+  context.beginPath()
+  context.strokeStyle = '#5E5BE2'
+  arrow(arrowWidth + spacing, txtHeight, spacing, txtHeight + 5)
+  context.stroke()
+
+  context.beginPath()
+  context.fillStyle = 'rgba(156,205,88, 0.8)'
+  context.fillRect(spacing, txtHeight + 70, arrowWidth, spacing)
+
+  context.fillStyle = '#333'
+  context.font = 'normal 20px OpenSans'
+  context.fillText('Poverty decrease', arrowWidth + spacing * 2, txtHeight + 10)
+  context.fillText('Poverty increase', arrowWidth + spacing * 2, txtHeight + 50)
+  context.fillText('Rebounded from poverty', arrowWidth + spacing * 2, txtHeight + 87)
+
+  context.fillStyle = '#aaa'
+  context.fillText('Justin Palmer / @Caged / labratrevenge.com - Source: City Observatory "Lost In Place" / cityobservatory.org', 20, height - 20)
 }
 
 // Read the header.  The complexity here is smart scaling of geometry.
@@ -100,59 +168,32 @@ function drawTract(record) {
 // callback - the callback to invoke after the process is complete
 //
 // Returns nothing
-function readHeader(callback) {
-  reader.readHeader(function(error, header) {
-    if (error) return callback(error)
+function scaleForBoundingBox(bbox) {
+  projection.scale(1).translate([0, 0])
 
-    projection.scale(1).translate([0, 0])
-    bbox = header.bbox
+  var g = { type: "FeatureCollection",
+            features: [{ type: "Feature",
+            geometry: { type: "Polygon", coordinates: [[ [ bbox[0], bbox[1] ], [ bbox[0], bbox[3] ], [ bbox[2], bbox[3] ], [ bbox[2], bbox[1] ], [ bbox[0], bbox[1] ] ]] }}]}
 
-    var g = { type: "FeatureCollection",
-              features: [{ type: "Feature",
-              geometry: { type: "Polygon", coordinates: [[ [ bbox[0], bbox[1] ], [ bbox[0], bbox[3] ], [ bbox[2], bbox[3] ], [ bbox[2], bbox[1] ], [ bbox[0], bbox[1] ] ]] }}]
-            }
+  b = path.bounds(g)
+  s = .95 / Math.max((b[1][0] - b[0][0]) / width, (b[1][1] - b[0][1]) / height)
+  t = [(width - s * (b[1][0] + b[0][0])) / 2, (height - s * (b[1][1] + b[0][1])) / 2]
 
-    b = path.bounds(g)
-    s = .99 / Math.max((b[1][0] - b[0][0]) / width, (b[1][1] - b[0][1]) / height)
-    t = [(width - s * (b[1][0] + b[0][0])) / 2, (height - s * (b[1][1] + b[0][1])) / 2]
-    projection.scale(s).translate(t)
-    callback(null)
-  })
+  projection.scale(s).translate(t)
 }
 
-function readAllRecords(callback) {
-  (function readRecord() {
-    reader.readRecord(function(error, record) {
-      if (error) return callback(error)
-
-      if (record === shapefile.end) {
-        canvas.pngStream().pipe(writer)
-        return callback(null)
-      }
-
-      drawTract(record)
-
-      process.nextTick(readRecord)
-    })
-  })()
-}
-
-function close(callback) {
-  reader.close(function(error) {
-    if (error) return callback(error)
-    console.log('Writing ' + output + '...');
-    writer.end()
-    callback(null)
-  })
-}
 
 // Draw an arrow on canvas.  See http://stackoverflow.com/a/6333775
-function arrow(fromx, fromy, tox, toy) {
-    var headlen = 6;   // length of head in pixels
-    var angle = Math.atan2(toy - fromy,tox - fromx)
-    context.moveTo(fromx, fromy)
-    context.lineTo(tox, toy)
-    context.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6))
-    context.moveTo(tox, toy)
-    context.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6))
+function arrow(fromx, fromy, tox, toy, headlen) {
+  var headlen = headlen || 6
+  var angle = Math.atan2(toy - fromy,tox - fromx)
+  context.moveTo(fromx, fromy)
+  context.lineTo(tox, toy)
+  context.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6))
+  context.moveTo(tox, toy)
+  context.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6))
+}
+
+function fontFile(name) {
+  return path.join(__dirname, '../fonts', name + '.ttf')
 }
