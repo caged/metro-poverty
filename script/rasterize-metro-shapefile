@@ -91,22 +91,28 @@ function renderTracts(tracts) {
 }
 
 function renderArrows(tracts) {
+  var extent = d3.extent(tracts, function(d) { return d.properties.POP10 / d.properties.ALAND10 }),
+      lineWidthScale = d3.scale.linear()
+        .domain(extent)
+        .range([1, 2.5])
+
   context.save()
-  context.lineWidth = 1.0
   for (var i = 0; i < tracts.length; i++) {
     var tract = tracts[i],
         props = tract.properties,
         centroid    = path.centroid(tract),
         povRateDiff = (props.POV10RATE - props.POV70RATE).toFixed(1),
-        pixelChange = povRateScale(povRateDiff)
+        pixelChange = povRateScale(povRateDiff),
+        lineWidth   = lineWidthScale(props.POP10 / props.ALAND10)
 
     context.beginPath()
+    context.lineWidth = lineWidth
     if(povRateDiff >= 0) {
       context.strokeStyle = '#FF483B'
-      arrow(centroid[0], centroid[1], centroid[0] + (pixelChange / .5), centroid[1] - pixelChange)
+      arrow(centroid[0], centroid[1], centroid[0] + (pixelChange / .5), centroid[1] - pixelChange, lineWidth * 4)
     } else {
       context.strokeStyle = '#5E5BE2'
-      arrow(centroid[0], centroid[1], centroid[0] - (pixelChange / .5), centroid[1] + pixelChange)
+      arrow(centroid[0], centroid[1], centroid[0] - (pixelChange / .5), centroid[1] + pixelChange, lineWidth * 4)
     }
 
     context.stroke()
