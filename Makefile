@@ -31,7 +31,6 @@ data/png/baltimore.png:
 	mkdir -p $(dir $@)
 	script/rasterize-metro-shapefile --in `script/export-metro-shapefile -d metro_poverty -m 12580` --out $@
 
-# TODO: Broken
 data/png/birmingham.png:
 	mkdir -p $(dir $@)
 	script/rasterize-metro-shapefile --in `script/export-metro-shapefile -d metro_poverty -m 13820` --out $@
@@ -68,7 +67,6 @@ data/png/dallas.png:
 	mkdir -p $(dir $@)
 	script/rasterize-metro-shapefile --in `script/export-metro-shapefile -d metro_poverty -m 19100` --out $@
 
-# TODO: Broken
 data/png/denver.png:
 	mkdir -p $(dir $@)
 	script/rasterize-metro-shapefile --in `script/export-metro-shapefile -d metro_poverty -m 19740` --out $@
@@ -77,7 +75,6 @@ data/png/detroit.png:
 	mkdir -p $(dir $@)
 	script/rasterize-metro-shapefile --in `script/export-metro-shapefile -d metro_poverty -m 19820` --out $@
 
-# TODO: Broken
 data/png/hartford.png:
 	mkdir -p $(dir $@)
 	script/rasterize-metro-shapefile --in `script/export-metro-shapefile -d metro_poverty -m 25540` --out $@
@@ -102,7 +99,6 @@ data/png/las_vegas.png:
 	mkdir -p $(dir $@)
 	script/rasterize-metro-shapefile --in `script/export-metro-shapefile -d metro_poverty -m 29820` --out $@
 
-# TODO: Broken
 data/png/los_angeles.png:
 	mkdir -p $(dir $@)
 	script/rasterize-metro-shapefile --in `script/export-metro-shapefile -d metro_poverty -m 31100` --out $@
@@ -151,7 +147,6 @@ data/png/philadelphia.png:
 	mkdir -p $(dir $@)
 	script/rasterize-metro-shapefile --in `script/export-metro-shapefile -d metro_poverty -m 37980` --out $@
 
-# TODO: Broken
 data/png/phoenix.png:
 	mkdir -p $(dir $@)
 	script/rasterize-metro-shapefile --in `script/export-metro-shapefile -d metro_poverty -m 38060` --out $@
@@ -184,7 +179,6 @@ data/png/rochester.png:
 	mkdir -p $(dir $@)
 	script/rasterize-metro-shapefile --in `script/export-metro-shapefile -d metro_poverty -m 40380` --out $@
 
-# TODO: Broken
 data/png/sacramento.png:
 	mkdir -p $(dir $@)
 	script/rasterize-metro-shapefile --in `script/export-metro-shapefile -d metro_poverty -m 40900` --out $@
@@ -197,17 +191,14 @@ data/png/san_antonio.png:
 	mkdir -p $(dir $@)
 	script/rasterize-metro-shapefile --in `script/export-metro-shapefile -d metro_poverty -m 41700` --out $@
 
-# TODO: Broken
 data/png/san_diego.png:
 	mkdir -p $(dir $@)
 	script/rasterize-metro-shapefile --in `script/export-metro-shapefile -d metro_poverty -m 41740` --out $@
 
-# TODO: Broken
 data/png/san_francisco.png:
 	mkdir -p $(dir $@)
 	script/rasterize-metro-shapefile --in `script/export-metro-shapefile -d metro_poverty -m 41860` --out $@
 
-# TODO: Broken
 data/png/san_jose.png:
 	mkdir -p $(dir $@)
 	script/rasterize-metro-shapefile --in `script/export-metro-shapefile -d metro_poverty -m 41940` --out $@
