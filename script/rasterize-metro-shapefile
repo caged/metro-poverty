@@ -39,9 +39,14 @@ var path = d3.geo.path()
   .projection(projection)
   .context(context)
 
-var povRateScale = d3.scale.sqrt()
-  .domain([-95, 95])
-  .range([0, 20])
+// var povRateScale = d3.scale.sqrt()
+//   .domain([-95, 95])
+//   .range([0, 20])
+var povRateScale = d3.scale.threshold()
+  .domain([-60, -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50, -60])
+  .range([28, 24, 20, 16, 12, 8, 4, 4, 8, 12, 16, 20, 24, 28])
+  // .domain([-50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50])
+  // .range([30, 25, 20, 15, 10, 5, 5, 10, 15, 20, 25, 30])
 
 // Basic styling for tracts
 context.addFont(font)
