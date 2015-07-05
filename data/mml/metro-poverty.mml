@@ -10,7 +10,7 @@
         "type": "postgis",
         "host": "localhost",
         "dbname": "metro_poverty",
-        "table": "(select gid, st_transform(geom, 2163) as geom from tracts) as tracts",
+        "table": "(select gid, st_transform(geom, 2163) as geom from tracts inner join tract_data on tract_data.tractid = tracts.geoid10) as tracts",
         "extent": "-2031868.7712532,-2117010.64826176,2516402.91905795,732383.818425467"
       }
     }
