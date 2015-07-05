@@ -2,3 +2,4 @@ node_modules
 data/xls
 data/shp
 *.png
+task.rb
