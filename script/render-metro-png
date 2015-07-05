@@ -1,0 +1,36 @@
+#!/usr/bin/env coffee
+
+argv   = require('minimist')(process.argv.slice(2))
+carto  = require 'carto'
+mapnik = require 'mapnik'
+path   = require 'path'
+fs     = require 'fs'
+
+project = argv.p or argv.project
+throw new Error('You need to specify an mml project with --project or -p') if !project?
+
+console.time('render')
+
+projectsPath = path.join __dirname, '../', 'data', 'mml'
+styles = []
+target = path.join projectsPath, "#{project}.mml"
+mml    = JSON.parse(fs.readFileSync target, 'utf-8')
+
+# Carto doesn't do this transform automatically, so we need to go through
+# each stylesheet and read it from the file system, and convert Stylesheet to
+# {id, data} objects
+mml.Stylesheet.forEach (style) ->
+  styles.push
+    id: path.basename style
+    data: fs.readFileSync path.join(__dirname, '../', 'data', 'mss', style), 'utf-8'
+
+mml.Stylesheet = styles
+out = new carto.Renderer().render(mml)
+
+mapnik.register_default_input_plugins() if mapnik.register_default_input_plugins
+
+map = new mapnik.Map 10240, 5760
+map.fromStringSync out
+map.zoomAll()
+map.renderFileSync path.join(__dirname, '../', 'data', 'png', "#{project}.png")
+console.timeEnd('render')

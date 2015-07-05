@@ -1,0 +1,18 @@
+{
+  "srs": "+proj=laea +lat_0=45 +lon_0=-100 +x_0=0 +y_0=0 +a=6370997 +b=6370997 +units=m +no_defs",
+  "Stylesheet": [ "metro-poverty.mss" ],
+  "bounds": "-2031868.7712532,-2117010.64826176,2516402.91905795,732383.818425467",
+  "Layer": [
+    {
+      "name": "tracts",
+      "srs": "+proj=laea +lat_0=45 +lon_0=-100 +x_0=0 +y_0=0 +a=6370997 +b=6370997 +units=m +no_defs",
+      "Datasource": {
+        "type": "postgis",
+        "host": "localhost",
+        "dbname": "metro_poverty",
+        "table": "(select gid, st_transform(geom, 2163) as geom from tracts) as tracts",
+        "extent": "-2031868.7712532,-2117010.64826176,2516402.91905795,732383.818425467"
+      }
+    }
+  ]
+}
