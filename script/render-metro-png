@@ -5,16 +5,31 @@ carto  = require 'carto'
 mapnik = require 'mapnik'
 path   = require 'path'
 fs     = require 'fs'
+Client = require 'pg-native'
 
 project = argv.p or argv.project
-throw new Error('You need to specify an mml project with --project or -p') if !project?
+database = argv.d or argv.database or 'metro_poverty'
+cbsa = argv.c or argv.cbsa
+
+if !project? or !database? or !cbsa
+  return console.log("Usage: #{path.basename(__filename)} --project path/to/project.mml --database database_name --cbsa metro_cbsa")
 
 console.time('render')
+
+client = new Client()
+client.connectSync("dbname=#{database}")
 
 projectsPath = path.join __dirname, '../', 'data', 'mml'
 styles = []
 target = path.join projectsPath, "#{project}.mml"
 mml    = JSON.parse(fs.readFileSync target, 'utf-8')
+query  = "select name as extent from tracts inner join tract_data on tract_data.tractid = tracts.geoid10 where cbsa_num ='$1'"
+bounds = client.querySync(query, cbsa)
+
+console.log bounds
+
+#
+# return
 
 # Carto doesn't do this transform automatically, so we need to go through
 # each stylesheet and read it from the file system, and convert Stylesheet to

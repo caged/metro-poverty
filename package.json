@@ -6,6 +6,7 @@
     "shapefile": "0.3.0",
     "queue-async": "1.0.7",
     "mapnik": "3.3.0",
-    "carto": "0.14.1"
+    "carto": "0.14.1",
+    "pg-native": "1.8.1"
   }
 }
