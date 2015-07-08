@@ -27,6 +27,7 @@ mml.Stylesheet.forEach (style) ->
 mml.Stylesheet = styles
 out = new carto.Renderer().render(mml)
 
+mapnik.register_system_fonts()
 mapnik.register_default_input_plugins() if mapnik.register_default_input_plugins
 
 map = new mapnik.Map 10240, 5760
