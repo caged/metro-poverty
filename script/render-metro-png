@@ -5,7 +5,7 @@ carto  = require 'carto'
 mapnik = require 'mapnik'
 path   = require 'path'
 fs     = require 'fs'
-Client = require 'pg-native'
+pgsync = require 'pg-sync'
 
 project = argv.p or argv.project
 database = argv.d or argv.database or 'metro_poverty'
@@ -16,17 +16,34 @@ if !project? or !database? or !cbsa
 
 console.time('render')
 
-client = new Client()
-client.connectSync("dbname=#{database}")
+client = new pgsync.Client()
+client.connect("dbname=#{database}")
 
 projectsPath = path.join __dirname, '../', 'data', 'mml'
 styles = []
 target = path.join projectsPath, "#{project}.mml"
 mml    = JSON.parse(fs.readFileSync target, 'utf-8')
-query  = "select name as extent from tracts inner join tract_data on tract_data.tractid = tracts.geoid10 where cbsa_num ='$1'"
-bounds = client.querySync(query, cbsa)
 
+query  = "select st_asgeojson(st_extent(st_transform(geom, 2163))) as extent from tracts inner join tract_data on tract_data.tractid = tracts.geoid10 where cbsa_num ='#{cbsa}'"
+results = client.query(query)
+extent = JSON.parse(results[0].extent)
+bounds = extent.coordinates[0][0].concat(extent.coordinates[0][1])
+
+# 1419060.3114986,
+#   -1134121.79766478,
+#   1419060.3114986,
+#   -1096014.19104458
+
+# mml.bounds = [-1134121.79766478, -1096014.19104458, 1419060.3114986, 1419060.3114986]
 console.log bounds
+mml.Layer.push
+  name: 'tracts'
+  Datasource:
+    type: 'postgis'
+    host: 'localhost'
+    dbname: database
+    table: "(select gid, st_transform(geom, 2163) as geom from tracts inner join tract_data on tract_data.tractid = tracts.geoid10 where cbsa_num = '#{cbsa}') as tracts"
+    extent: bounds
 
 #
 # return
