@@ -24,6 +24,9 @@ pgsql2shp  -f $out_file $db_name \
   from tract_data \
   inner join tracts on tracts.geoid10 = tract_data.tractid \
   where cbsa_num = '$metro_id' and \
-  tracts.geoid10 not in('32003005902', '22075050100');" > /dev/null 2>&1
+  tracts.geoid10 not in('32003005902', '22075050100', '06065043822', \
+  '29055450200', '29055450400', '29055450301', '29055450302', '29055450102',\
+  '06085513500', '48453001768', '06067009900', '06113010401', '06113010505',\
+  '06113011206');" > /dev/null 2>&1
 
 echo $out_file

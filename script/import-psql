@@ -11,7 +11,7 @@ fi
 
 # Drop and recreate the database
 dropdb --if-exists -i $db_name
-createdb $db_name
+createdb -T template0 -E UTF8 $db_name
 
 # Create the PostGIS extension and load the data schema
 psql -c 'create extension postgis' $db_name
@@ -21,6 +21,8 @@ psql -f sql/schema.sql $db_name
 cat data/csv/lost_in_place.csv | \
   psql -c "copy tract_data from stdin with csv header delimiter ',' NULL E'' quote '\"'" $db_name
 
+# Some tractids have been improperly formatted as integers, resulting in the
+# removal of leading zeros.  We need to add them back.
 psql -c "update tract_data set tractid = lpad(tractid, 11, '0')" $db_name
 
 # Create a couple of useful indexes
@@ -31,4 +33,4 @@ psql -c 'create index cbsa_title_idx on tract_data (lower(cbsa_title))' $db_name
 make data/gz/nhgis_tract_2010.zip
 
 # Import the shape data to postgres
-shp2pgsql -I -D -s 4326 data/shp/nhgis_tract_2010.shp tracts | psql -d $db_name
+shp2pgsql -W 'UTF-8' -I -D -s 4326 data/shp/nhgis_tract_2010.shp tracts | psql -d $db_name
