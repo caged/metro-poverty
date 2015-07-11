@@ -10,7 +10,15 @@ var data = fs.readFileSync('data/csv/lost_in_place.csv', 'utf-8'),
 // Rollup flat CSV data into a structured JSON object suitable for later
 // visualization
 var metros = d3.nest()
-  .key(function(d) { return d.cbsa_title })
+  .key(function(d) {
+    return d.cbsa_title
+      .split('-')[0]
+      .split(',')[0]
+      .split('/')[0]
+      .replace(/\s/g, '_')
+      .replace('.', '')
+      .toLowerCase()
+  })
   .rollup(rollup)
   .entries(rows)
 
