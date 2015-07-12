@@ -38,7 +38,7 @@ process.stdout.write(JSON.stringify(metros))
 // Returns an {Array} of various statistical data about tracts
 function rollup(tracts) {
   var total           = tracts.length,
-      out             = { tracts: [] },
+      out             = { },
       rebounded       = 0,
       lesspoor        = 0,
       chronicallypoor = 0,
@@ -46,51 +46,62 @@ function rollup(tracts) {
       fallenstar      = 0,
       pops            = [],
       povcs           = [],
-      povrs           = []
+      povrs           = [],
+      objs            = []
 
   tracts.forEach(function(tract) {
+    // rb - rebounded
+    // lp - less poor
+    // cp - currently poor
+    // np - newley poor
+    // fs - fallen star
     var obj = {
-      id: tract.tractid,
-      milesfromcenter: tract.coredistm,
-      rebounded: 0,
-      lessPoor: 0,
-      chronicallyPoor: 0,
-      newlyPoor: 0,
-      fallenStar: 0
+      rb: 0,
+      lp: 0,
+      cp: 0,
+      np: 0,
+      fs: 0
     }
 
     // Convert properties like pop70, pop80, etc. into arrays
     // Round totals to nearest whole number and rates to two decimal places
-    obj.population  = years.map(function(y) { return Math.round(tract['pop' + y]) })
-    obj.povcount    = years.map(function(y) { return Math.round(tract['npov' + y]) })
-    obj.povrate     = years.map(function(y) { return +tract['pov' + y + 'rate'].toFixed(2) })
+    var population  = years.map(function(y) { return Math.round(tract['pop' + y]) }),
+        povcount    = years.map(function(y) { return Math.round(tract['npov' + y]) }),
+        povrate     = years.map(function(y) { return +tract['pov' + y + 'rate'].toFixed(2) })
 
     // Track all counts so we can easily get extents for the values later
-    pops = pops.concat(obj.population)
-    povcs = povcs.concat(obj.povcount)
-    povrs = povrs.concat(obj.povrate)
+    pops = pops.concat(population)
+    povcs = povcs.concat(povcount)
+    povrs = povrs.concat(povrate)
 
     // Count the classifications of each tract
-    if(tract.rebounded != 'NA') {        obj.rebounded = 1; rebounded += 1 }
-    if(tract.less_poor != 'NA') {        obj.lessPoor = 1; lesspoor  += 1 }
-    if(tract.chronically_poor != 'NA') {  obj.chronicallyPoor = 1; chronicallypoor += 1 }
-    if(tract.newly_poor != 'NA') {      obj.newlyPoor = 1; newlypoor += 1 }
-    if(tract.fallen_star != 'NA') {     obj.fallenStar = 1; fallenstar += 1 }
+    if(tract.rebounded != 'NA') {        obj.rb = 1; rebounded += 1 }
+    if(tract.less_poor != 'NA') {        obj.lp = 1; lesspoor  += 1 }
+    if(tract.chronically_poor != 'NA') { obj.cp = 1; chronicallypoor += 1 }
+    if(tract.newly_poor != 'NA') {       obj.np = 1; newlypoor += 1 }
+    if(tract.fallen_star != 'NA') {      obj.fs = 1; fallenstar += 1 }
 
-    out.tracts.push(obj)
+    obj.change = +(+tract.pov70rate - +tract.pov10rate).toFixed(1)
+
+    years.forEach(function(y) { delete tract['pov' + y + 'rate'] })
+
+    objs.push(obj)
   })
 
-  out.rebounded       = rebounded
-  out.lessPoor        = lesspoor
-  out.chronicallyPoor = chronicallypoor
-  out.newlyPoor       = newlypoor
-  out.fallenStar      = fallenstar
-  out.total           = total
+  // out.name     = tracts[0].cbsa_title
+  out.rb       = rebounded
+  out.lp        = lesspoor
+  out.cp = chronicallypoor
+  out.np       = newlypoor
+  out.fs      = fallenstar
+  out.t           = total
 
   // Compute extents of all tracts belonging to this metro
   out.populationExtent = d3.extent(pops)
   out.povcountExtent = d3.extent(povcs)
   out.povrateExtent = d3.extent(povrs)
+
+  out.tracts = objs
 
   return out
 }
