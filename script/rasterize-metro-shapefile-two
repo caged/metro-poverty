@@ -19,8 +19,8 @@ var argv = minimist(process.argv.slice(2))
     index = 0,
     scale = 2,
     bbox = null,
-    background = '#111111',
-    outline    = '#232323',
+    background = 'hsl(222, 10%, 8%)',
+    outline    = 'hsl(222, 10%, 18%)',
     decrease   = '#85C958',
     increase   = '#C1504D'
 
@@ -82,7 +82,7 @@ function renderTracts(tracts) {
     context.beginPath()
     path(tract)
 
-    context.fillStyle = d3.rgb(background).brighter(-1).toString()
+    context.fillStyle = d3.rgb(background).brighter(-0.5).toString()
     context.fill()
     context.stroke()
   }
@@ -91,11 +91,12 @@ function renderTracts(tracts) {
 function renderArrows(tracts) {
   var extent = d3.extent(tracts, function(d) { return d.properties.POP10 / d.properties.ALAND10 })
   var lineWidthScale = d3.scale.linear()
+        // one tract in chicago is an outlier, so lineWidthScale
+        // clamp this to something reasonable based on other
+        // poplation densities
         .domain([extent[0], Math.min(extent[1], 0.02)])
         .range([0.1, 1.0])
         .clamp(true)
-
-  console.log(lineWidthScale.domain());
 
   tracts = tracts
     .sort(function(a, b) { return (a.properties.POP10 / a.properties.ALAND10) - (b.properties.POP10 / b.properties.ALAND10) })
