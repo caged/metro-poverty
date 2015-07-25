@@ -6,9 +6,12 @@ usage() {
   echo "Usage: $0 [-d database name] [-m metro id]" 1>&2; exit 1;
 }
 
-while getopts ":d:m:" opt; do
+usgs_db_name='usgs'
+
+while getopts ":d:m:u:" opt; do
   case ${opt} in
     d) db_name=$OPTARG;;
+    u) usgs_db_name=$OPTARG;;
     m) metro_id=$OPTARG;;
     *) usage;;
   esac
@@ -17,19 +20,41 @@ done
 if [[ -z $db_name || -z $metro_id ]]; then usage; fi
 
 tmp_dir=`mktemp -d -t metro-poverty`
-out_file="$tmp_dir/$metro_id.shp"
 
-pgsql2shp  -f $out_file $db_name \
+out_file_tracts="$tmp_dir/$metro_id.shp"
+out_file_water="$tmp_dir/$metro_id-water.shp"
+
+low_density_tracts="'32003005902', '22075050100', '06065043822', \
+'29055450200', '29055450400', '29055450301', '29055450302', '29055450102',\
+'06085513500', '48453001768', '06067009900', '06113010401', '06113010505',\
+'06113011206', '06041131100', '18061060600', '05035030600', '49035113906',\
+'49035110103', '49035110104', '49035110102', '53033027701', '17133600102',\
+'17133600101', '17163503100', '17163503202', '51550021301', '51550021200',
+'12095016704', '04013941300', '04013941000'"
+
+pgsql2shp -f $out_file_tracts $db_name \
   "select * \
   from tract_data \
   inner join tracts on tracts.geoid10 = tract_data.tractid \
   where cbsa_num = '$metro_id' and \
-  tracts.geoid10 not in('32003005902', '22075050100', '06065043822', \
-  '29055450200', '29055450400', '29055450301', '29055450302', '29055450102',\
-  '06085513500', '48453001768', '06067009900', '06113010401', '06113010505',\
-  '06113011206', '06041131100', '18061060600', '05035030600', '49035113906',\
-  '49035110103', '49035110104', '49035110102', '53033027701', '17133600102',\
-  '17133600101', '17163503100', '17163503202', '51550021301', '51550021200',
-  '12095016704', '04013941300', '04013941000');" > /dev/null 2>&1
+  tracts.geoid10 not in($low_density_tracts);" > /dev/null 2>&1
 
-echo $out_file
+# shape_poly=`psql -d $db_name --no-align --tuples-only -c \
+#   "select st_asewkt(st_setsrid(st_union(geom), 4326)) as extent \
+#   from tract_data \
+#   inner join tracts on tracts.geoid10 = tract_data.tractid \
+#   where cbsa_num = '$metro_id' and \
+#   tracts.geoid10 not in ($low_density_tracts);"` > /dev/null 2>&1
+
+bbox=`psql -d $db_name --no-align --tuples-only -c \
+  "select st_asewkt(st_setsrid(st_extent(geom), 4326)) as extent \
+  from tract_data \
+  inner join tracts on tracts.geoid10 = tract_data.tractid \
+  where cbsa_num = '$metro_id' and \
+  tracts.geoid10 not in ($low_density_tracts);"` > /dev/null 2>&1
+
+pgsql2shp -f $out_file_water $usgs_db_name \
+  "select row_number() over() as id, \
+  st_intersection(st_geomfromtext('$bbox'), wkb_geometry) geom \
+  from inland_water \
+  where st_intersects(st_geomfromtext('$bbox'), wkb_geometry)" > /dev/null 2>&1
