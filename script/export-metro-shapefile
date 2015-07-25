@@ -45,7 +45,7 @@ pgsql2shp -f $out_file_tracts $db_name \
 #   inner join tracts on tracts.geoid10 = tract_data.tractid \
 #   where cbsa_num = '$metro_id' and \
 #   tracts.geoid10 not in ($low_density_tracts);"` > /dev/null 2>&1
-
+#
 bbox=`psql -d $db_name --no-align --tuples-only -c \
   "select st_asewkt(st_setsrid(st_extent(geom), 4326)) as extent \
   from tract_data \
@@ -57,4 +57,6 @@ pgsql2shp -f $out_file_water $usgs_db_name \
   "select row_number() over() as id, \
   st_intersection(st_geomfromtext('$bbox'), wkb_geometry) geom \
   from inland_water \
-  where st_intersects(st_geomfromtext('$bbox'), wkb_geometry)" > /dev/null 2>&1
+  where st_contains(st_geomfromtext('$bbox'), wkb_geometry)" > /dev/null 2>&1
+
+echo $out_file_tracts

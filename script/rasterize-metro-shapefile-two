@@ -27,6 +27,8 @@ var argv = minimist(process.argv.slice(2))
 if(!input || !output)
   return console.log("Supply arguments --in SHAPEFILE --out IMAGE");
 
+waterFile = path.dirname(input) + '/' + path.basename(input, '.shp') + '-water.shp'
+
 // Define output
 var outfile = fs.createWriteStream(output)
 
@@ -59,13 +61,18 @@ context.scale(scale, scale)
 // Create a solid backing
 context.fillRect(0, 0, width, height)
 
-shapefile.read(input, function render(error, collection) {
+shapefile.read(input, function render(error, tractGeo) {
   if(error) return console.log(error)
 
-  scaleForBoundingBox(collection.bbox)
-  renderTracts(collection.features)
-  renderArrows(collection.features)
-  canvas.pngStream().pipe(outfile)
+  scaleForBoundingBox(tractGeo.bbox)
+  renderTracts(tractGeo.features)
+
+  // Render the water for each city and generate the resulting png
+  shapefile.read(waterFile, function render(error, waterGeo) {
+    renderWater(waterGeo.features)
+    renderArrows(tractGeo.features)
+    canvas.pngStream().pipe(outfile)
+  })
 })
 
 //  Draw an individual tract to the canvas
@@ -85,6 +92,23 @@ function renderTracts(tracts) {
     context.fillStyle = d3.rgb(background).brighter(-0.5).toString()
     context.fill()
     context.stroke()
+  }
+}
+
+//  Draw an individual tract to the canvas
+//
+// water - A GeoJSON feature object
+//
+// Returns nothing
+function renderWater(waters) {
+  for (var i = 0; i < waters.length; i++) {
+    var water = waters[i]
+
+    context.beginPath()
+    path(water)
+
+    context.fillStyle = d3.rgb(background).brighter(2).toString()
+    context.fill()
   }
 }
 
