@@ -8,17 +8,21 @@ var d3 = require('d3'),
     minimist = require('minimist'),
     queue = require('queue-async'),
     fs = require('fs'),
-    path = require('path')
+    pathname = require('path')
 
 // Setup some options
 var argv = minimist(process.argv.slice(2))
     input = argv.in,
     output = argv.out,
-    width = argv.width || 1500,
-    height = argv.height || 1500,
+    width = argv.width || 1150,
+    height = argv.height || 1150,
     index = 0,
     scale = 2,
-    bbox = null
+    bbox = null,
+    background = 'hsl(222, 10%, 8%)',
+    outline    = 'hsl(222, 10%, 15%)',
+    decrease   = '#85C958',
+    increase   = '#C1504D'
 
 if(!input || !output)
   return console.log("Supply arguments --in SHAPEFILE --out IMAGE");
@@ -39,22 +43,17 @@ var path = d3.geo.path()
   .projection(projection)
   .context(context)
 
-// var povRateScale = d3.scale.sqrt()
-//   .domain([-95, 95])
-//   .range([0, 20])
 var povRateScale = d3.scale.threshold()
   .domain([-60, -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50, -60])
-  .range([28, 24, 20, 16, 12, 8, 4, 4, 8, 12, 16, 20, 24, 28])
-  // .domain([-50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50])
-  // .range([30, 25, 20, 15, 10, 5, 5, 10, 15, 20, 25, 30])
+  .range([14, 12, 10, 8, 6, 4, 2, 2, 4, 6, 8, 10, 12, 14].map(function(d) { return d * 3 }))
+  //.range([14, 12, 10, 8, 6, 4, 2, 2, 4, 6, 8, 10, 12, 14])
 
 // Basic styling for tracts
 context.addFont(font)
-context.fillStyle = '#fff'
-context.strokeStyle = '#aaa'
-context.lineWidth = 0.5
+context.fillStyle = background
+context.strokeStyle = outline
+context.lineWidth = 2
 context.lineJoin = 'round'
-context.antialias = 'subpixel'
 context.font = 'bold 30px OpenSans';
 context.scale(scale, scale)
 
@@ -67,7 +66,7 @@ shapefile.read(input, function render(error, collection) {
   scaleForBoundingBox(collection.bbox)
   renderTracts(collection.features)
   renderArrows(collection.features)
-  renderMeta(collection)
+  renderSource()
   canvas.pngStream().pipe(outfile)
 })
 
@@ -81,20 +80,28 @@ function renderTracts(tracts) {
     var tract = tracts[i],
         props = tract.properties
 
-    context.fillStyle = props.REBOUNDED != 'NA' ? 'rgba(156,205,88, 0.8)' : '#fff'
 
     context.beginPath()
     path(tract)
+
+    context.fillStyle = d3.rgb(background).brighter(-0.5).toString()
     context.fill()
     context.stroke()
   }
 }
 
 function renderArrows(tracts) {
-  var extent = d3.extent(tracts, function(d) { return d.properties.POP10 / d.properties.ALAND10 }),
-      lineWidthScale = d3.scale.linear()
-        .domain(extent)
-        .range([1, 2.5])
+  var extent = d3.extent(tracts, function(d) { return d.properties.POP10 / d.properties.ALAND10 })
+  var lineWidthScale = d3.scale.linear()
+        // one tract in chicago is an outlier, so lineWidthScale
+        // clamp this to something reasonable based on other
+        // poplation densities
+        .domain([extent[0], Math.min(extent[1], 0.02)])
+        .range([1, 4.0])
+        .clamp(true)
+
+  tracts = tracts
+    .sort(function(a, b) { return (a.properties.POP10 / a.properties.ALAND10) - (b.properties.POP10 / b.properties.ALAND10) })
 
   context.save()
   for (var i = 0; i < tracts.length; i++) {
@@ -108,11 +115,11 @@ function renderArrows(tracts) {
     context.beginPath()
     context.lineWidth = lineWidth
     if(povRateDiff >= 0) {
-      context.strokeStyle = '#FF483B'
-      arrow(centroid[0], centroid[1], centroid[0] + (pixelChange / .5), centroid[1] - pixelChange, lineWidth * 4)
+      context.strokeStyle = increase
+      arrow(centroid[0], centroid[1], centroid[0] + (pixelChange / .5), centroid[1] - pixelChange, lineWidth * 3)
     } else {
-      context.strokeStyle = '#5E5BE2'
-      arrow(centroid[0], centroid[1], centroid[0] - (pixelChange / .5), centroid[1] + pixelChange, lineWidth * 4)
+      context.strokeStyle = decrease
+      arrow(centroid[0], centroid[1], centroid[0] - (pixelChange / .5), centroid[1] + pixelChange, lineWidth * 3)
     }
 
     context.stroke()
@@ -120,47 +127,14 @@ function renderArrows(tracts) {
   context.restore()
 }
 
-function renderMeta(collection) {
-  var name = collection.features[0].properties.CBSA_TITLE,
-      subtitle = "Change in poverty rate from 1970 to 2010"
-      measures = context.measureText(name),
-      txtWidth = measures.width,
-      txtHeight = measures.actualBoundingBoxAscent + measures.actualBoundingBoxDescent,
-      arrowWidth = povRateScale(50),
-      spacing    = 20
-
-  context.fillStyle = '#222'
-  context.fillText(name, (width - (txtWidth)) / 2, txtHeight + spacing)
-
-  context.font = 'normal 22px OpenSans'
-  txtWidth = context.measureText(subtitle).width
+function renderSource() {
+  var name = pathname.basename(output).split('.')[0]
+  name = name.charAt(0).toUpperCase() + name.slice(1)
+  context.save()
+  context.font = '18px OpenSans';
   context.fillStyle = '#555'
-  context.fillText(subtitle, (width - (txtWidth)) / 2, txtHeight + (spacing * 3))
-
-  context.lineWidth = 2
-
-  context.beginPath()
-  context.strokeStyle = '#FF483B'
-  arrow(spacing, txtHeight + 45, arrowWidth + spacing, txtHeight + spacing * 2)
-  context.stroke()
-
-  context.beginPath()
-  context.strokeStyle = '#5E5BE2'
-  arrow(arrowWidth + spacing, txtHeight, spacing, txtHeight + 5)
-  context.stroke()
-
-  context.beginPath()
-  context.fillStyle = 'rgba(156,205,88, 0.8)'
-  context.fillRect(spacing, txtHeight + 70, arrowWidth, spacing)
-
-  context.fillStyle = '#333'
-  context.font = 'normal 20px OpenSans'
-  context.fillText('Poverty decrease', arrowWidth + spacing * 2, txtHeight + 10)
-  context.fillText('Poverty increase', arrowWidth + spacing * 2, txtHeight + 50)
-  context.fillText('Rebounded from poverty', arrowWidth + spacing * 2, txtHeight + 87)
-
-  context.fillStyle = '#aaa'
-  context.fillText('Justin Palmer / @Caged / labratrevenge.com - Source: City Observatory "Lost In Place" / cityobservatory.org', 20, height - 20)
+  context.fillText('Change in ' +  name + ' area poverty: 1970-2010; Source: http://labratrevenge.com/nation-of-poverty', 20, height - 20)
+  context.restore()
 }
 
 // Read the header.  The complexity here is smart scaling of geometry.
@@ -176,7 +150,7 @@ function scaleForBoundingBox(bbox) {
             geometry: { type: "Polygon", coordinates: [[ [ bbox[0], bbox[1] ], [ bbox[0], bbox[3] ], [ bbox[2], bbox[3] ], [ bbox[2], bbox[1] ], [ bbox[0], bbox[1] ] ]] }}]}
 
   b = path.bounds(g)
-  s = .95 / Math.max((b[1][0] - b[0][0]) / width, (b[1][1] - b[0][1]) / height)
+  s = .99 / Math.max((b[1][0] - b[0][0]) / width, (b[1][1] - b[0][1]) / height)
   t = [(width - s * (b[1][0] + b[0][0])) / 2, (height - s * (b[1][1] + b[0][1])) / 2]
 
   projection.scale(s).translate(t)
@@ -185,7 +159,7 @@ function scaleForBoundingBox(bbox) {
 
 // Draw an arrow on canvas.  See http://stackoverflow.com/a/6333775
 function arrow(fromx, fromy, tox, toy, headlen) {
-  var headlen = headlen || 6
+  var headlen = headlen || 10
   var angle = Math.atan2(toy - fromy,tox - fromx)
   context.moveTo(fromx, fromy)
   context.lineTo(tox, toy)
@@ -195,5 +169,5 @@ function arrow(fromx, fromy, tox, toy, headlen) {
 }
 
 function fontFile(name) {
-  return path.join(__dirname, '../fonts', name + '.ttf')
+  return pathname.join(__dirname, '../fonts', name + '.ttf')
 }
