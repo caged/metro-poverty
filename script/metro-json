@@ -89,10 +89,10 @@ function rollup(tracts) {
   })
 
   // out.name     = tracts[0].cbsa_title
-  out.rb       = rebounded
-  out.lp        = lesspoor
-  out.cp = chronicallypoor
-  out.np       = newlypoor
+  out.rb      = rebounded
+  out.lp      = lesspoor
+  out.cp      = chronicallypoor
+  out.np      = newlypoor
   out.fs      = fallenstar
   out.t       = total
   out.npp     = (100 * newlypoor / total).toFixed(1)
