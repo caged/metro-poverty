@@ -94,7 +94,8 @@ function rollup(tracts) {
   out.cp = chronicallypoor
   out.np       = newlypoor
   out.fs      = fallenstar
-  out.t           = total
+  out.t       = total
+  out.npp     = (100 * newlypoor / total).toFixed(1)
 
   // Compute extents of all tracts belonging to this metro
   out.populationExtent = d3.extent(pops)
