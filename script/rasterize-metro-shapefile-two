@@ -8,19 +8,19 @@ var d3 = require('d3'),
     minimist = require('minimist'),
     queue = require('queue-async'),
     fs = require('fs'),
-    path = require('path')
+    pathname = require('path')
 
 // Setup some options
 var argv = minimist(process.argv.slice(2))
     input = argv.in,
     output = argv.out,
-    width = argv.width || 250,
-    height = argv.height || 250,
+    width = argv.width || 1150,
+    height = argv.height || 1150,
     index = 0,
     scale = 2,
     bbox = null,
     background = 'hsl(222, 10%, 8%)',
-    outline    = 'hsl(222, 10%, 18%)',
+    outline    = 'hsl(222, 10%, 15%)',
     decrease   = '#85C958',
     increase   = '#C1504D'
 
@@ -45,13 +45,14 @@ var path = d3.geo.path()
 
 var povRateScale = d3.scale.threshold()
   .domain([-60, -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50, -60])
-  .range([14, 12, 10, 8, 6, 4, 2, 2, 4, 6, 8, 10, 12, 14])
+  .range([14, 12, 10, 8, 6, 4, 2, 2, 4, 6, 8, 10, 12, 14].map(function(d) { return d * 3 }))
+  //.range([14, 12, 10, 8, 6, 4, 2, 2, 4, 6, 8, 10, 12, 14])
 
 // Basic styling for tracts
 context.addFont(font)
 context.fillStyle = background
 context.strokeStyle = outline
-context.lineWidth = 0.5
+context.lineWidth = 2
 context.lineJoin = 'round'
 context.font = 'bold 30px OpenSans';
 context.scale(scale, scale)
@@ -65,6 +66,7 @@ shapefile.read(input, function render(error, collection) {
   scaleForBoundingBox(collection.bbox)
   renderTracts(collection.features)
   renderArrows(collection.features)
+  renderSource()
   canvas.pngStream().pipe(outfile)
 })
 
@@ -95,7 +97,7 @@ function renderArrows(tracts) {
         // clamp this to something reasonable based on other
         // poplation densities
         .domain([extent[0], Math.min(extent[1], 0.02)])
-        .range([0.1, 1.0])
+        .range([1, 4.0])
         .clamp(true)
 
   tracts = tracts
@@ -114,14 +116,24 @@ function renderArrows(tracts) {
     context.lineWidth = lineWidth
     if(povRateDiff >= 0) {
       context.strokeStyle = increase
-      arrow(centroid[0], centroid[1], centroid[0] + (pixelChange / .5), centroid[1] - pixelChange, lineWidth * 4)
+      arrow(centroid[0], centroid[1], centroid[0] + (pixelChange / .5), centroid[1] - pixelChange, lineWidth * 3)
     } else {
       context.strokeStyle = decrease
-      arrow(centroid[0], centroid[1], centroid[0] - (pixelChange / .5), centroid[1] + pixelChange, lineWidth * 4)
+      arrow(centroid[0], centroid[1], centroid[0] - (pixelChange / .5), centroid[1] + pixelChange, lineWidth * 3)
     }
 
     context.stroke()
   }
+  context.restore()
+}
+
+function renderSource() {
+  var name = pathname.basename(output).split('.')[0]
+  name = name.charAt(0).toUpperCase() + name.slice(1)
+  context.save()
+  context.font = '18px OpenSans';
+  context.fillStyle = '#555'
+  context.fillText('Change in ' +  name + ' area poverty: 1970-2010; Source: http://labratrevenge.com/nation-of-poverty', 20, height - 20)
   context.restore()
 }
 
@@ -147,7 +159,7 @@ function scaleForBoundingBox(bbox) {
 
 // Draw an arrow on canvas.  See http://stackoverflow.com/a/6333775
 function arrow(fromx, fromy, tox, toy, headlen) {
-  var headlen = headlen || 3
+  var headlen = headlen || 10
   var angle = Math.atan2(toy - fromy,tox - fromx)
   context.moveTo(fromx, fromy)
   context.lineTo(tox, toy)
@@ -157,5 +169,5 @@ function arrow(fromx, fromy, tox, toy, headlen) {
 }
 
 function fontFile(name) {
-  return path.join(__dirname, '../fonts', name + '.ttf')
+  return pathname.join(__dirname, '../fonts', name + '.ttf')
 }
