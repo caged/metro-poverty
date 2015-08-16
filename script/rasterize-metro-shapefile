@@ -14,8 +14,8 @@ var d3 = require('d3'),
 var argv = minimist(process.argv.slice(2))
     input = argv.in,
     output = argv.out,
-    width = argv.width || 1150,
-    height = argv.height || 1150,
+    width = argv.width || 2800,
+    height = argv.height || 2800,
     index = 0,
     scale = 2,
     bbox = null,
@@ -45,14 +45,13 @@ var path = d3.geo.path()
 
 var povRateScale = d3.scale.threshold()
   .domain([-60, -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50, -60])
-  .range([14, 12, 10, 8, 6, 4, 2, 2, 4, 6, 8, 10, 12, 14].map(function(d) { return d * 3 }))
-  //.range([14, 12, 10, 8, 6, 4, 2, 2, 4, 6, 8, 10, 12, 14])
+  .range([14, 12, 10, 8, 6, 4, 2, 2, 4, 6, 8, 10, 12, 14].map(function(d) { return d * (scale + 3) }))
 
 // Basic styling for tracts
 context.addFont(font)
 context.fillStyle = background
 context.strokeStyle = outline
-context.lineWidth = 2
+context.lineWidth = 4
 context.lineJoin = 'round'
 context.font = 'bold 30px OpenSans';
 context.scale(scale, scale)
