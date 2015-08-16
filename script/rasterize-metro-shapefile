@@ -3,6 +3,7 @@
 // Include our dependencies
 var d3 = require('d3'),
     shapefile = require('shapefile'),
+    stats     = require('stats-lite'),
     Canvas = require('canvas'),
     Font = Canvas.Font,
     minimist = require('minimist'),
@@ -104,13 +105,14 @@ function renderTracts(tracts) {
 }
 
 function renderArrows(tracts) {
-  var extent = d3.extent(tracts, function(d) { return d.properties.POP10 / d.properties.ALAND10 })
+  var populations = tracts.map(function(t) { return t.properties.POP10 }),
+      areas       = tracts.map(function(t) { return t.properties.ALAND10 })
+      max         = stats.percentile(populations, 0.95) / stats.percentile(areas, 0.95),
+      min         = stats.percentile(populations, 0.05) / stats.percentile(areas, 0.05)
+
   var lineWidthScale = d3.scale.linear()
-        // one tract in chicago is an outlier, so lineWidthScale
-        // clamp this to something reasonable based on other
-        // poplation densities
-        .domain([extent[0], Math.min(extent[1], 0.02)])
-        .range([1, 4.0])
+        .domain([max, min])
+        .range([scale, scale * 3])
         .clamp(true)
 
   tracts = tracts
