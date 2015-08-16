@@ -62,10 +62,24 @@ context.fillRect(0, 0, width, height)
 shapefile.read(input, function render(error, collection) {
   if(error) return console.log(error)
 
+
+  var details = collection.features.map(function(c) {
+    var keys = Object.keys(c.properties),
+        out  = {}
+
+    keys.forEach(function(k) {
+      out[k.toLowerCase()] = c.properties[k]
+    })
+
+    return out
+  })
+
+  var fullName = collection.features[0].properties.CBSA_TITLE
+
   scaleForBoundingBox(collection.bbox)
   renderTracts(collection.features)
   renderArrows(collection.features)
-  renderSource()
+  renderSource(fullName, details)
   canvas.pngStream().pipe(outfile)
 })
 
@@ -126,13 +140,34 @@ function renderArrows(tracts) {
   context.restore()
 }
 
-function renderSource() {
-  var name = pathname.basename(output).split('.')[0]
+function renderSource(metro, details) {
+  var label = '',
+      name = pathname.basename(output).split('.')[0].replace('_', ' '),
+      stats = metroAggregates(details)
+
+  if(name == 'washington') name = 'Washintgon, D.C.'
   name = name.charAt(0).toUpperCase() + name.slice(1)
+
   context.save()
-  context.font = '18px OpenSans';
+
+  context.font = 'bold 60px OpenSans';
+  context.fillStyle = '#fff'
+  context.fillText(name, (width - context.measureText(name).width) / 2, 90)
+
+  label = stats.npp + '% are newly poor; ' + stats.rp + '% have rebounded'
+  context.font = '36px OpenSans';
+  context.fillStyle = '#999'
+  context.fillText(label, (width - context.measureText(label).width) / 2, height - 150)
+
+  label = 'Change in ' +  metro + ' area poverty: 1970-2010'
+  context.font = '32px OpenSans';
   context.fillStyle = '#555'
-  context.fillText('Change in ' +  name + ' area poverty: 1970-2010; Source: http://labratrevenge.com/nation-of-poverty', 20, height - 20)
+  context.fillText(label, (width - context.measureText(label).width) / 2, height - 100)
+
+  label = 'Source: Justin Palmer; http://labratrevenge.com/nation-of-poverty'
+  context.font = '32px OpenSans';
+  context.fillText(label, (width - context.measureText(label).width) / 2, height - 50)
+
   context.restore()
 }
 
@@ -169,4 +204,85 @@ function arrow(fromx, fromy, tox, toy, headlen) {
 
 function fontFile(name) {
   return pathname.join(__dirname, '../fonts', name + '.ttf')
+}
+
+// Format tract-level data by metro area into a more JSON-friendly format for
+// later visualiation.  Also compute some aggregates across the metro area for
+// rebounded tracts, newly poor, less poor, chronically poor and fallen star.
+//
+// The returned population, povcount and povrate properties are an array in
+// decennial year order [70, 80, 90, 00, 10]
+//
+// tracts - An {Array} of tracts belonging to a single metro area
+//
+// Returns an {Array} of various statistical data about tracts
+function metroAggregates(tracts) {
+  var total           = tracts.length,
+      years           = ['70', '80', '90', '00', '10'],
+      out             = { },
+      rebounded       = 0,
+      lesspoor        = 0,
+      chronicallypoor = 0,
+      newlypoor       = 0,
+      fallenstar      = 0,
+      pops            = [],
+      povcs           = [],
+      povrs           = [],
+      objs            = []
+
+  tracts.forEach(function(tract) {
+    // rb - rebounded
+    // lp - less poor
+    // cp - currently poor
+    // np - newley poor
+    // fs - fallen star
+    var obj = {
+      rb: 0,
+      lp: 0,
+      cp: 0,
+      np: 0,
+      fs: 0
+    }
+
+    // Convert properties like pop70, pop80, etc. into arrays
+    // Round totals to nearest whole number and rates to two decimal places
+    var population  = years.map(function(y) { return Math.round(tract['pop' + y]) }),
+        povcount    = years.map(function(y) { return Math.round(tract['npov' + y]) }),
+        povrate     = years.map(function(y) { return +tract['pov' + y + 'rate'].toFixed(2) })
+
+    // Track all counts so we can easily get extents for the values later
+    pops = pops.concat(population)
+    povcs = povcs.concat(povcount)
+    povrs = povrs.concat(povrate)
+
+    // Count the classifications of each tract
+    if(tract.rebounded != 'NA') {        obj.rb = 1; rebounded += 1 }
+    if(tract.less_poor != 'NA') {        obj.lp = 1; lesspoor  += 1 }
+    if(tract.chronically_poor != 'NA') { obj.cp = 1; chronicallypoor += 1 }
+    if(tract.newly_poor != 'NA') {       obj.np = 1; newlypoor += 1 }
+    if(tract.fallen_star != 'NA') {      obj.fs = 1; fallenstar += 1 }
+
+    obj.change = +(+tract.pov70rate - +tract.pov10rate).toFixed(1)
+
+    years.forEach(function(y) { delete tract['pov' + y + 'rate'] })
+
+    objs.push(obj)
+  })
+
+  // out.name     = tracts[0].cbsa_title
+  out.rb      = rebounded
+  out.lp      = lesspoor
+  out.cp      = chronicallypoor
+  out.np      = newlypoor
+  out.fs      = fallenstar
+  out.t       = total
+  out.npp     = (100 * newlypoor / total).toFixed(1)
+  out.rp      = (100 * rebounded / total).toFixed(1)
+
+  // Compute extents of all tracts belonging to this metro
+  out.populationExtent = d3.extent(pops)
+  out.povcountExtent = d3.extent(povcs)
+  out.povrateExtent = d3.extent(povrs)
+
+  return out
 }
